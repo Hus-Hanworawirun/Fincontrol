@@ -104,7 +104,7 @@ class OverviewWidget extends StatelessWidget {
                           style: TextStyle(fontSize: 24, color: Colors.white),
                         ),
                         Text(
-                          'User Name',
+                          'The One Who Wait',
                           style: TextStyle(fontSize: 24, color: Colors.white, fontWeight: FontWeight.bold),
                         ),
                       ],
