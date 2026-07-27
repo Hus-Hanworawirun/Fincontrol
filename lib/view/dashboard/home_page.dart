@@ -1,3 +1,4 @@
+import '../widgets/income_expense_item.dart';
 import 'package:fincontrol/view/dashboard/activity_page.dart';
 import 'package:fincontrol/view/dashboard/profile_page.dart';
 import 'package:fincontrol/view/dashboard/wealth_page.dart';
@@ -13,12 +14,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
-  static const List<Widget> _pages = <Widget>[
-    OverviewWidget(),
-    ActivityPage(),
-    WealthPage(),
-    ProfilePage(),
-  ];
 
   void _onItemTapped(int index) {
     setState(() {
@@ -28,8 +23,17 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final List<Widget> pages = [
+      OverviewWidget(
+        onSeeAllActivity: () => _onItemTapped(1),
+      ),
+      const ActivityPage(),
+      const WealthPage(),
+      const ProfilePage(),
+    ];
+
     return Scaffold(
-      body: _pages.elementAt(_selectedIndex),
+      body: pages.elementAt(_selectedIndex),
       floatingActionButton: SizedBox(
         height: 64,
         width: 64,
@@ -60,7 +64,9 @@ class _HomePageState extends State<HomePage> {
 }
 
 class OverviewWidget extends StatelessWidget {
-  const OverviewWidget({super.key});
+  final VoidCallback? onSeeAllActivity;
+  
+  const OverviewWidget({super.key, this.onSeeAllActivity});
 
   @override
   Widget build(BuildContext context) {
@@ -78,13 +84,12 @@ class OverviewWidget extends StatelessWidget {
         ),
         ListView(
           padding: const EdgeInsets.only(
-            top: 48, // Adjusted top padding for safe area since AppBar is gone
+            top: 48, 
             left: 16,
             right: 16,
             bottom: 16,
           ),
           children: [
-            // The Header is now INSIDE the scrolling list!
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -180,13 +185,13 @@ class OverviewWidget extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            _buildIncomeExpense(
+                            IncomeExpenseItem(
                               icon: Icons.add,
                               iconColor: Colors.green,
                               label: 'Income',
                               amount: '\$4,500.00',
                             ),
-                            _buildIncomeExpense(
+                            IncomeExpenseItem(
                               icon: Icons.remove,
                               iconColor: Colors.red,
                               label: 'Expense',
@@ -342,7 +347,7 @@ class OverviewWidget extends StatelessWidget {
                           ),
                         ),
                         TextButton(
-                          onPressed: () {},
+                          onPressed: onSeeAllActivity,
                           style: TextButton.styleFrom(
                             padding: EdgeInsets.zero,
                             minimumSize: Size.zero,
@@ -388,49 +393,6 @@ class OverviewWidget extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 100), // Extra padding for FloatingActionButton
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildIncomeExpense({
-    required IconData icon,
-    required Color iconColor,
-    required String label,
-    required String amount,
-  }) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: iconColor.withValues(alpha: 0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: iconColor, size: 20),
-        ),
-        const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.black54,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              amount,
-              style: const TextStyle(
-                fontSize: 16,
-                color: Colors.black,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
           ],
         ),
       ],

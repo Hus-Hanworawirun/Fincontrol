@@ -16,7 +16,7 @@ class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _userNameController = TextEditingController();
-  bool _isSignUp = true; // Defaulting to Sign Up as per user focus, but toggleable
+  bool _isSignUp = true;
 
   @override
   void dispose() {
