@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 
 class HomePage extends StatelessWidget {
   final VoidCallback? onSeeAllActivity;
-  const HomePage({super.key, this.onSeeAllActivity});
+  final VoidCallback? onGoToWealth;
+  const HomePage({super.key, this.onSeeAllActivity, this.onGoToWealth});
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +24,7 @@ class HomePage extends StatelessWidget {
         ),
         ListView(
           padding: const EdgeInsets.only(
-            top: 48, 
+            top: 48,
             left: 16,
             right: 16,
             bottom: 16,
@@ -47,7 +48,10 @@ class HomePage extends StatelessWidget {
                           children: [
                             Text(
                               'Hello,',
-                              style: TextStyle(fontSize: 24, color: Colors.white),
+                              style: TextStyle(
+                                fontSize: 24,
+                                color: Colors.white,
+                              ),
                             ),
                             Text(
                               'The One Who Wait',
@@ -70,7 +74,7 @@ class HomePage extends StatelessWidget {
                   children: [
                     IconButton(
                       icon: const Icon(Icons.search, color: Colors.black),
-                      iconSize: 28, 
+                      iconSize: 28,
                       style: IconButton.styleFrom(
                         backgroundColor: Colors.white,
                         padding: const EdgeInsets.all(12),
@@ -82,23 +86,26 @@ class HomePage extends StatelessWidget {
                             builder: (context) => const InvestPage(),
                           ),
                         );
-                      }
+                      },
                     ),
                     const SizedBox(width: 8),
                     IconButton(
-                      icon: const Icon(Icons.notifications, color: Colors.black), 
+                      icon: const Icon(
+                        Icons.notifications,
+                        color: Colors.black,
+                      ),
                       iconSize: 28,
                       style: IconButton.styleFrom(
                         backgroundColor: Colors.white,
                         padding: const EdgeInsets.all(12),
                       ),
-                      onPressed: () {}
+                      onPressed: () {},
                     ),
                   ],
                 ),
               ],
             ),
-            const SizedBox(height: 32), 
+            const SizedBox(height: 32),
             Material(
               elevation: 9,
               shadowColor: Colors.black.withValues(alpha: 0.5),
@@ -185,7 +192,9 @@ class HomePage extends StatelessWidget {
                           ),
                         ),
                         TextButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            onGoToWealth?.call();
+                          },
                           style: TextButton.styleFrom(
                             padding: EdgeInsets.zero,
                             minimumSize: Size.zero,
@@ -204,77 +213,87 @@ class HomePage extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     SizedBox(
-                      height: 160, 
+                      height: 160,
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
                         itemCount: 4,
                         itemBuilder: (context, index) {
                           return Padding(
-                            padding: const EdgeInsets.only(right: 16 ,bottom: 16, left: 4),
+                            padding: const EdgeInsets.only(
+                              right: 16,
+                              bottom: 16,
+                              left: 4,
+                            ),
                             child: Material(
                               elevation: 9,
                               shadowColor: Colors.black.withValues(alpha: 0.5),
                               borderRadius: BorderRadius.circular(16),
-                              color: Colors.white, 
+                              color: Colors.white,
                               clipBehavior: Clip.antiAlias,
                               child: Container(
                                 width: 140,
                                 padding: const EdgeInsets.all(16),
-                                color: const Color(0xFF4F3FF0).withValues(alpha: 0.05),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.directions_car,
-                                    color: Color(0xFF4F3FF0),
-                                    size: 24, // Slightly larger icon
-                                  ),
-                                ),
-                                const Spacer(), // Use Spacer to push text to the bottom naturally
-                                Column(
+                                color: const Color(
+                                  0xFF4F3FF0,
+                                ).withValues(alpha: 0.05),
+                                child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
-                                      'New Car',
-                                      style: TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black87,
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.directions_car,
+                                        color: Color(0xFF4F3FF0),
+                                        size: 24, // Slightly larger icon
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
-                                    const Text(
-                                      '\$5k / \$20k',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.grey,
+                                    const Spacer(), // Use Spacer to push text to the bottom naturally
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'New Car',
+                                          style: TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        const Text(
+                                          '\$5k / \$20k',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(4),
+                                      child: LinearProgressIndicator(
+                                        value: 0.25,
+                                        minHeight: 6,
+                                        backgroundColor: Colors.grey.shade200,
+                                        valueColor:
+                                            const AlwaysStoppedAnimation<Color>(
+                                              Color(0xFF4F3FF0),
+                                            ),
                                       ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 12),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: LinearProgressIndicator(
-                                    value: 0.25,
-                                    minHeight: 6,
-                                    backgroundColor: Colors.grey.shade200,
-                                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF4F3FF0)),
-                                  ),
-                                )
-                              ],
+                              ),
                             ),
-                          ),
-                        ),
-                      );
-                    },
+                          );
+                        },
                       ),
                     ),
                   ],
@@ -349,7 +368,9 @@ class HomePage extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 100), // Extra padding for FloatingActionButton
+            const SizedBox(
+              height: 100,
+            ), // Extra padding for FloatingActionButton
           ],
         ),
       ],
@@ -410,4 +431,3 @@ class HomePage extends StatelessWidget {
     );
   }
 }
-

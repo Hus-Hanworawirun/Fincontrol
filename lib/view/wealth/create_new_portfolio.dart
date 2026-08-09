@@ -14,6 +14,7 @@ class _CreatePortfolioPageState extends State<CreatePortfolioPage> {
   final TextEditingController _noteController = TextEditingController();
   final TextEditingController _goalController = TextEditingController();
   bool _setGoal = false;
+  IconData _selectedIcon = Icons.monetization_on;
 
   final List<String> _suggestions = [
     'Passive Income',
@@ -51,40 +52,43 @@ class _CreatePortfolioPageState extends State<CreatePortfolioPage> {
         children: [
           const SizedBox(height: 16),
           Center(
-            child: Stack(
-              children: [
-                Container(
-                  width: 96,
-                  height: 96,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF9B41FF),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.monetization_on,
-                      size: 48,
-                      color: Colors.greenAccent,
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
+            child: GestureDetector(
+              onTap: () => _showIconPicker(context),
+              child: Stack(
+                children: [
+                  Container(
+                    width: 96,
+                    height: 96,
                     decoration: const BoxDecoration(
-                      color: Color(0xFF1C1C1E),
+                      color: Color(0xFF9B41FF),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
-                      Icons.edit,
-                      size: 16,
-                      color: Colors.white,
+                    child: Center(
+                      child: Icon(
+                        _selectedIcon,
+                        size: 48,
+                        color: Colors.greenAccent,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF1C1C1E),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.edit,
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 32),
@@ -323,6 +327,78 @@ class _CreatePortfolioPageState extends State<CreatePortfolioPage> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showIconPicker(BuildContext context) {
+    final icons = [
+      Icons.monetization_on,
+      Icons.house,
+      Icons.directions_car,
+      Icons.savings,
+      Icons.account_balance,
+      Icons.trending_up,
+      Icons.shopping_bag,
+      Icons.flight,
+      Icons.school,
+      Icons.favorite,
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (BuildContext context) {
+        return Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Select Icon',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 24),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 5,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                ),
+                itemCount: icons.length,
+                itemBuilder: (context, index) {
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedIcon = icons[index];
+                      });
+                      Navigator.pop(context);
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: _selectedIcon == icons[index] 
+                            ? const Color(0xFF4F3FF0).withValues(alpha: 0.2) 
+                            : Colors.grey.shade100,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        icons[index],
+                        color: _selectedIcon == icons[index] 
+                            ? const Color(0xFF4F3FF0) 
+                            : Colors.black54,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
     );
   }
 }

@@ -24,7 +24,10 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   @override
   Widget build(BuildContext context) {
     final List<Widget> pages = [
-      HomePage(onSeeAllActivity: () => _onItemTapped(1)),
+      HomePage(
+        onSeeAllActivity: () => _onItemTapped(1),
+        onGoToWealth: () => _onItemTapped(2),
+      ),
       const ActivityPage(),
       const WealthPage(),
       const ProfilePage(),
