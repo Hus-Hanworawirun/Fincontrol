@@ -1,7 +1,15 @@
 import 'dart:ui';
+import 'package:fincontrol/view/wealth/create_new_portfolio.dart';
+import 'package:fincontrol/data/models/portfolio_model.dart';
 import 'package:fincontrol/view/wealth/invest_page.dart';
 import 'package:fincontrol/view/widgets/income_expense_item.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fincontrol/bloc/transaction/transaction_bloc.dart';
+import 'package:fincontrol/bloc/transaction/transaction_state.dart';
+import 'package:fincontrol/bloc/portfolio/portfolio_bloc.dart';
+import 'package:fincontrol/bloc/portfolio/portfolio_state.dart';
+import 'package:intl/intl.dart';
 
 class HomePage extends StatelessWidget {
   final VoidCallback? onSeeAllActivity;
@@ -106,68 +114,82 @@ class HomePage extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 32),
-            Material(
-              elevation: 9,
-              shadowColor: Colors.black.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(20),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                  child: Container(
-                    height: 200,
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: Colors.white, width: 1.5),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text(
-                          'Total Balance',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.black54,
-                            fontWeight: FontWeight.w600,
-                          ),
+            BlocBuilder<TransactionBloc, TransactionState>(
+              builder: (context, state) {
+                double totalIncome = 0;
+                double totalExpense = 0;
+                if (state is TransactionLoaded) {
+                  for (var t in state.transactions) {
+                    if (t.type == 'Income') totalIncome += t.amount;
+                    if (t.type == 'Expense') totalExpense += t.amount;
+                  }
+                }
+                double totalBalance = totalIncome - totalExpense;
+
+                return Material(
+                  elevation: 9,
+                  shadowColor: Colors.black.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(20),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                      child: Container(
+                        height: 200,
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(color: Colors.white, width: 1.5),
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          '\$12,450.00',
-                          style: TextStyle(
-                            fontSize: 36,
-                            color: Colors.black,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            IncomeExpenseItem(
-                              icon: Icons.add,
-                              iconColor: Colors.green,
-                              label: 'Income',
-                              amount: '\$4,500.00',
+                            const Text(
+                              'Total Balance',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.black54,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                            IncomeExpenseItem(
-                              icon: Icons.remove,
-                              iconColor: Colors.red,
-                              label: 'Expense',
-                              amount: '\$1,200.00',
+                            const SizedBox(height: 4),
+                            Text(
+                              '\$${totalBalance.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontSize: 36,
+                                color: Colors.black,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                IncomeExpenseItem(
+                                  icon: Icons.add,
+                                  iconColor: Colors.green,
+                                  label: 'Income',
+                                  amount: '\$${totalIncome.toStringAsFixed(2)}',
+                                ),
+                                IncomeExpenseItem(
+                                  icon: Icons.remove,
+                                  iconColor: Colors.red,
+                                  label: 'Expense',
+                                  amount: '\$${totalExpense.toStringAsFixed(2)}',
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
             const SizedBox(height: 24),
             Material(
@@ -212,89 +234,133 @@ class HomePage extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    SizedBox(
-                      height: 160,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: 4,
-                        itemBuilder: (context, index) {
-                          return Padding(
-                            padding: const EdgeInsets.only(
-                              right: 16,
-                              bottom: 16,
-                              left: 4,
-                            ),
-                            child: Material(
-                              elevation: 9,
-                              shadowColor: Colors.black.withValues(alpha: 0.5),
-                              borderRadius: BorderRadius.circular(16),
-                              color: Colors.white,
-                              clipBehavior: Clip.antiAlias,
-                              child: Container(
-                                width: 140,
-                                padding: const EdgeInsets.all(16),
-                                color: const Color(
-                                  0xFF4F3FF0,
-                                ).withValues(alpha: 0.05),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(
-                                        Icons.directions_car,
-                                        color: Color(0xFF4F3FF0),
-                                        size: 24, // Slightly larger icon
-                                      ),
-                                    ),
-                                    const Spacer(), // Use Spacer to push text to the bottom naturally
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        const Text(
-                                          'New Car',
-                                          style: TextStyle(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.black87,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        const Text(
-                                          '\$5k / \$20k',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 12),
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(4),
-                                      child: LinearProgressIndicator(
-                                        value: 0.25,
-                                        minHeight: 6,
-                                        backgroundColor: Colors.grey.shade200,
-                                        valueColor:
-                                            const AlwaysStoppedAnimation<Color>(
-                                              Color(0xFF4F3FF0),
-                                            ),
-                                      ),
-                                    ),
-                                  ],
+                    BlocBuilder<PortfolioBloc, PortfolioState>(
+                      builder: (context, state) {
+                        if (state is PortfolioLoading) {
+                          return const SizedBox(height: 160, child: Center(child: CircularProgressIndicator()));
+                        }
+                        if (state is PortfolioError) {
+                          return SizedBox(
+                            height: 160,
+                            child: Center(child: Text('Error: ${state.message}', style: const TextStyle(color: Colors.red))),
+                          );
+                        }
+                        if (state is PortfolioLoaded) {
+                          final goals = state.portfolios.where((p) => (p.targetGoal ?? 0) > 0).toList();
+                          if (goals.isEmpty) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 8.0),
+                              child: InkWell(
+                                onTap: () {
+                                  Navigator.push(context, MaterialPageRoute(builder: (context) => const CreatePortfolioPage()));
+                                },
+                                borderRadius: BorderRadius.circular(16),
+                                child: Container(
+                                  height: 160,
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF4F3FF0).withValues(alpha: 0.05),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: const Color(0xFF4F3FF0).withValues(alpha: 0.3), width: 1.5),
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(Icons.add_circle_outline, color: Color(0xFF4F3FF0), size: 40),
+                                      const SizedBox(height: 12),
+                                      const Text('Create your first goal', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 16)),
+                                      const SizedBox(height: 4),
+                                      Text('Start tracking your investments', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                                    ],
+                                  ),
                                 ),
                               ),
+                            );
+                          }
+                          
+                          return SizedBox(
+                            height: 160,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: goals.length,
+                              itemBuilder: (context, index) {
+                                final goal = goals[index];
+                                final currentProgress = 0.0; // Needs asset value calculation in a real app
+                                final progressPercent = (currentProgress / goal.targetGoal!).clamp(0.0, 1.0);
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 16, bottom: 16, left: 4),
+                                  child: Material(
+                                    elevation: 9,
+                                    shadowColor: Colors.black.withValues(alpha: 0.5),
+                                    borderRadius: BorderRadius.circular(16),
+                                    color: Colors.white,
+                                    clipBehavior: Clip.antiAlias,
+                                    child: Container(
+                                      width: 140,
+                                      padding: const EdgeInsets.all(16),
+                                      color: const Color(0xFF4F3FF0).withValues(alpha: 0.05),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(8),
+                                            decoration: const BoxDecoration(
+                                              color: Colors.white,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: Icon(
+                                              // ignore: non_const_argument_for_const_parameter
+                                              IconData(goal.icon, fontFamily: 'MaterialIcons'),
+                                              color: const Color(0xFF4F3FF0),
+                                              size: 24,
+                                            ),
+                                          ),
+                                          const Spacer(),
+                                          Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                goal.name,
+                                                style: const TextStyle(
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.black87,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                '\$${currentProgress.toStringAsFixed(0)} / \$${goal.targetGoal!.toStringAsFixed(0)}',
+                                                style: const TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.grey,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 12),
+                                          ClipRRect(
+                                            borderRadius: BorderRadius.circular(4),
+                                            child: LinearProgressIndicator(
+                                              value: progressPercent,
+                                              minHeight: 6,
+                                              backgroundColor: Colors.grey.shade200,
+                                              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF4F3FF0)),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                           );
-                        },
-                      ),
+                        }
+                        return const SizedBox(height: 160);
+                      },
                     ),
                   ],
                 ),
@@ -341,28 +407,60 @@ class HomePage extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    _buildTransactionItem(
-                      icon: Icons.shopping_cart,
-                      color: Colors.orange,
-                      title: 'Groceries',
-                      subtitle: 'Today, 10:24 AM',
-                      amount: '-\$45.50',
-                    ),
-                    const Divider(height: 24, thickness: 0.5),
-                    _buildTransactionItem(
-                      icon: Icons.movie,
-                      color: Colors.purple,
-                      title: 'Netflix Subscription',
-                      subtitle: 'Yesterday, 08:00 AM',
-                      amount: '-\$15.99',
-                    ),
-                    const Divider(height: 24, thickness: 0.5),
-                    _buildTransactionItem(
-                      icon: Icons.fastfood,
-                      color: Colors.red,
-                      title: 'Restaurant',
-                      subtitle: 'Jul 21, 07:30 PM',
-                      amount: '-\$32.00',
+                    BlocBuilder<TransactionBloc, TransactionState>(
+                      builder: (context, state) {
+                        if (state is TransactionLoading) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+                        if (state is TransactionLoaded) {
+                          var sorted = List.of(state.transactions)
+                            ..sort((a, b) => b.date.compareTo(a.date));
+                          var recent = sorted.take(3).toList();
+                          
+                          if (recent.isEmpty) {
+                            return SizedBox(
+                              height: 160,
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.receipt_long, color: Colors.grey.shade300, size: 48),
+                                    const SizedBox(height: 16),
+                                    Text('No recent transactions', style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 16)),
+                                    const SizedBox(height: 4),
+                                    Text('Tap the + button to add one', style: TextStyle(color: Colors.grey.shade400, fontSize: 14)),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }
+                          
+                          return Column(
+                            children: recent.map((t) {
+                              bool isIncome = t.type == 'Income';
+                              return Column(
+                                children: [
+                                  _buildTransactionItem(
+                                    icon: _getCategoryIcon(t.category),
+                                    color: isIncome ? Colors.green : Colors.orange,
+                                    title: t.note.isNotEmpty ? t.note : t.category,
+                                    subtitle: DateFormat('MMM dd, hh:mm a').format(t.date),
+                                    amount: '${isIncome ? "+" : "-"}\$${t.amount.toStringAsFixed(2)}',
+                                  ),
+                                  if (t != recent.last) const Divider(height: 24, thickness: 0.5),
+                                ],
+                              );
+                            }).toList(),
+                          );
+                        }
+                        if (state is TransactionError) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 32),
+                            child: Center(child: Text('Error: ${state.message}', style: const TextStyle(color: Colors.red))),
+                          );
+                        }
+                        return const SizedBox();
+                      },
                     ),
                   ],
                 ),
@@ -429,5 +527,17 @@ class HomePage extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  IconData _getCategoryIcon(String category) {
+    switch (category) {
+      case 'Food': return Icons.fastfood;
+      case 'Transport': return Icons.directions_car;
+      case 'Shopping': return Icons.shopping_cart;
+      case 'Entertainment': return Icons.movie;
+      case 'Work': return Icons.work;
+      case 'Salary': return Icons.attach_money;
+      default: return Icons.category;
+    }
   }
 }

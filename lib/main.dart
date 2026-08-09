@@ -4,6 +4,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'firebase_options.dart';
 import 'bloc/auth/auth_bloc.dart';
+import 'bloc/transaction/transaction_bloc.dart';
+import 'bloc/transaction/transaction_event.dart';
+import 'data/repositories/transaction_repository.dart';
+import 'bloc/portfolio/portfolio_bloc.dart';
+import 'bloc/portfolio/portfolio_event.dart';
+import 'data/repositories/portfolio_repository.dart';
+import 'bloc/asset/asset_bloc.dart';
+import 'bloc/asset/asset_event.dart';
+import 'data/repositories/asset_repository.dart';
+import 'data/repositories/market_api_repository.dart';
 import 'view/navigationbar/bottom_navigation_bar.dart';
 import 'view/splash/splash_page.dart';
 
@@ -23,6 +33,9 @@ class MyApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (context) => AuthBloc()),
+        BlocProvider(create: (context) => TransactionBloc(transactionRepository: TransactionRepository())..add(LoadTransactions(FirebaseAuth.instance.currentUser?.uid ?? ''))),
+        BlocProvider(create: (context) => PortfolioBloc(portfolioRepository: PortfolioRepository())..add(LoadPortfolios(FirebaseAuth.instance.currentUser?.uid ?? ''))),
+        BlocProvider(create: (context) => AssetBloc(assetRepository: AssetRepository(), marketApiRepository: MarketApiRepository())..add(const LoadAssets())),
       ],
       child: MaterialApp(
         title: 'FinControl',

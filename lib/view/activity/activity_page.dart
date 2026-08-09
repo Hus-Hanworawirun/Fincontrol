@@ -2,24 +2,10 @@ import 'package:fincontrol/view/wealth/invest_page.dart';
 import 'package:fincontrol/view/widgets/income_expense_item.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';
-
-enum RecordType { income, expense }
-
-class FinancialRecord {
-  final RecordType type;
-  final String note;
-  final String category;
-  final double amount;
-  final DateTime date;
-
-  FinancialRecord({
-    required this.type,
-    required this.note,
-    required this.category,
-    required this.amount,
-    required this.date,
-  });
-}
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fincontrol/bloc/transaction/transaction_bloc.dart';
+import 'package:fincontrol/bloc/transaction/transaction_state.dart';
+import 'package:fincontrol/data/models/transaction_model.dart';
 
 class ActivityPage extends StatefulWidget {
   const ActivityPage({super.key});
@@ -35,11 +21,7 @@ class _ActivityPageState extends State<ActivityPage> {
   int _selectedMonth = DateTime.now().month;
   int _selectedYear = DateTime.now().year;
 
-  final List<FinancialRecord> _mockRecords = [
-    FinancialRecord(type: RecordType.expense, note: 'Groceries', category: 'Food', amount: 45.50, date: DateTime.now()),
-    FinancialRecord(type: RecordType.income, note: 'Salary', category: 'Work', amount: 4500.00, date: DateTime.now().subtract(const Duration(days: 1))),
-    FinancialRecord(type: RecordType.expense, note: 'Netflix', category: 'Entertainment', amount: 15.99, date: DateTime.now().subtract(const Duration(days: 2))),
-  ];
+
 
   @override
   void initState() {
@@ -161,7 +143,7 @@ class _ActivityPageState extends State<ActivityPage> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    _buildBreakdownContent(_mockRecords),
+                    _buildBreakdownContent(),
                     const SizedBox(height: 100),
                   ],
                 ),
@@ -228,68 +210,82 @@ class _ActivityPageState extends State<ActivityPage> {
   }
 
   Widget _buildStaticGlassBalanceCard() {
-    return Material(
-      elevation: 9,
-      shadowColor: Colors.black.withValues(alpha: 0.5),
-      borderRadius: BorderRadius.circular(20),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-          child: Container(
-            height: 200,
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: Colors.white, width: 1.5),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  'Total Balance',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.black54,
-                    fontWeight: FontWeight.w600,
-                  ),
+    return BlocBuilder<TransactionBloc, TransactionState>(
+      builder: (context, state) {
+        double totalIncome = 0;
+        double totalExpense = 0;
+        if (state is TransactionLoaded) {
+          for (var t in state.transactions) {
+            if (t.type == 'Income') totalIncome += t.amount;
+            if (t.type == 'Expense') totalExpense += t.amount;
+          }
+        }
+        double totalBalance = totalIncome - totalExpense;
+
+        return Material(
+          elevation: 9,
+          shadowColor: Colors.black.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(20),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+              child: Container(
+                height: 200,
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(color: Colors.white, width: 1.5),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                const SizedBox(height: 4),
-                const Text(
-                  '\$12,450.00',
-                  style: TextStyle(
-                    fontSize: 36,
-                    color: Colors.black,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    IncomeExpenseItem(
-                      icon: Icons.add,
-                      iconColor: Colors.green,
-                      label: 'Income',
-                      amount: '\$4,500.00',
+                    const Text(
+                      'Total Balance',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.black54,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    IncomeExpenseItem(
-                      icon: Icons.remove,
-                      iconColor: Colors.red,
-                      label: 'Expense',
-                      amount: '\$1,200.00',
+                    const SizedBox(height: 4),
+                    Text(
+                      '\$${totalBalance.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 36,
+                        color: Colors.black,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IncomeExpenseItem(
+                          icon: Icons.add,
+                          iconColor: Colors.green,
+                          label: 'Income',
+                          amount: '\$${totalIncome.toStringAsFixed(2)}',
+                        ),
+                        IncomeExpenseItem(
+                          icon: Icons.remove,
+                          iconColor: Colors.red,
+                          label: 'Expense',
+                          amount: '\$${totalExpense.toStringAsFixed(2)}',
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      }
     );
   }
 
@@ -598,42 +594,64 @@ class _ActivityPageState extends State<ActivityPage> {
     return months[month - 1];
   }
 
-  Widget _buildBreakdownContent(List<FinancialRecord> records) {
-    List<FinancialRecord> filteredRecords = [];
-    
-    if (_selectedPeriod == 'Day') {
-      filteredRecords = records.where((r) => r.date.year == _selectedYear && r.date.month == _selectedMonth && r.date.day == _selectedDay).toList();
-    } else if (_selectedPeriod == 'Month') {
-      filteredRecords = records.where((r) => r.date.year == _selectedYear && r.date.month == _selectedMonth).toList();
-    } else if (_selectedPeriod == 'Year') {
-      filteredRecords = records.where((r) => r.date.year == _selectedYear).toList();
-    } else {
-      // Week - rough approximation
-      final now = DateTime.now();
-      filteredRecords = records.where((r) => now.difference(r.date).inDays <= 7).toList();
-    }
+  Widget _buildBreakdownContent() {
+    return BlocBuilder<TransactionBloc, TransactionState>(
+      builder: (context, state) {
+        if (state is TransactionLoading) {
+          return const Center(child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 40),
+            child: CircularProgressIndicator(),
+          ));
+        }
+        if (state is TransactionLoaded) {
+          List<TransactionModel> filteredRecords = [];
+          final records = state.transactions;
+          
+          if (_selectedPeriod == 'Day') {
+            filteredRecords = records.where((r) => r.date.year == _selectedYear && r.date.month == _selectedMonth && r.date.day == _selectedDay).toList();
+          } else if (_selectedPeriod == 'Month') {
+            filteredRecords = records.where((r) => r.date.year == _selectedYear && r.date.month == _selectedMonth).toList();
+          } else if (_selectedPeriod == 'Year') {
+            filteredRecords = records.where((r) => r.date.year == _selectedYear).toList();
+          } else {
+            // Week - exact logic based on startOfWeek
+            DateTime date = DateTime(_currentDate.year, _currentDate.month, _selectedDay);
+            int daysToSubtract = date.weekday == 7 ? 0 : date.weekday;
+            DateTime startOfWeek = date.subtract(Duration(days: daysToSubtract));
+            DateTime endOfWeek = startOfWeek.add(const Duration(days: 7));
+            
+            filteredRecords = records.where((r) {
+               return r.date.isAfter(startOfWeek.subtract(const Duration(milliseconds: 1))) && r.date.isBefore(endOfWeek);
+            }).toList();
+          }
 
-    if (filteredRecords.isEmpty) {
-      return const Center(child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 40),
-        child: Text('No activity found for this period', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500)),
-      ));
-    }
+          filteredRecords.sort((a, b) => b.date.compareTo(a.date));
 
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: filteredRecords.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final record = filteredRecords[index];
-        return _buildDetailItem(record);
-      },
+          if (filteredRecords.isEmpty) {
+            return const Center(child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 40),
+              child: Text('No activity found for this period', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500)),
+            ));
+          }
+
+          return ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: filteredRecords.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final record = filteredRecords[index];
+              return _buildDetailItem(record);
+            },
+          );
+        }
+        return const SizedBox();
+      }
     );
   }
 
-  Widget _buildDetailItem(FinancialRecord record) {
-    final isIncome = record.type == RecordType.income;
+  Widget _buildDetailItem(TransactionModel record) {
+    final isIncome = record.type == 'Income';
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -667,7 +685,7 @@ class _ActivityPageState extends State<ActivityPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  record.note,
+                  record.note.isNotEmpty ? record.note : record.category,
                   style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.black87, fontSize: 15),
                 ),
                 const SizedBox(height: 4),

@@ -3,6 +3,11 @@ import 'package:fincontrol/view/wealth/create_new_portfolio.dart';
 import 'package:fincontrol/view/wealth/invest_page.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fincontrol/bloc/asset/asset_bloc.dart';
+import 'package:fincontrol/bloc/asset/asset_state.dart';
+import 'package:fincontrol/bloc/portfolio/portfolio_bloc.dart';
+import 'package:fincontrol/bloc/portfolio/portfolio_state.dart';
 
 class WealthPage extends StatefulWidget {
   const WealthPage({super.key});
@@ -130,84 +135,95 @@ class _WealthPageState extends State<WealthPage> {
   }
 
   Widget _buildInvestmentBalanceCard() {
-    return Material(
-      elevation: 9,
-      shadowColor: Colors.black.withValues(alpha: 0.5),
-      borderRadius: BorderRadius.circular(20),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-          child: Container(
-            height: 200,
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: Colors.white, width: 1.5),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  'Total Investment Value',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.black54,
-                    fontWeight: FontWeight.w600,
-                  ),
+    return BlocBuilder<AssetBloc, AssetState>(
+      builder: (context, state) {
+        double totalValue = 0;
+        if (state is AssetLoaded) {
+          for (var asset in state.assets) {
+            totalValue += (asset.currentPrice * asset.totalQuantity);
+          }
+        }
+
+        return Material(
+          elevation: 9,
+          shadowColor: Colors.black.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(20),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+              child: Container(
+                height: 200,
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(color: Colors.white, width: 1.5),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                const SizedBox(height: 4),
-                const Text(
-                  '\$45,230.00',
-                  style: TextStyle(
-                    fontSize: 36,
-                    color: Colors.black,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: const [
-                          Icon(Icons.trending_up, color: Colors.green, size: 20),
-                          SizedBox(width: 4),
-                          Text(
-                            '+\$2,450.00 (5.7%)',
-                            style: TextStyle(
-                              color: Colors.green,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
                     const Text(
-                      'All time',
+                      'Total Investment Value',
                       style: TextStyle(
-                        color: Colors.grey,
+                        fontSize: 16,
+                        color: Colors.black54,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '\$${totalValue.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 36,
+                        color: Colors.black,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: const [
+                              Icon(Icons.trending_up, color: Colors.green, size: 20),
+                              SizedBox(width: 4),
+                              Text(
+                                '+\$0.00 (0.0%)', // Real profit requires historical data tracking
+                                style: TextStyle(
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'All time',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      }
     );
   }
 
@@ -326,79 +342,115 @@ class _WealthPageState extends State<WealthPage> {
   }
 
   Widget _buildAssetAllocation() {
-    return Material(
-      color: Colors.white,
-      elevation: 9,
-      shadowColor: Colors.black.withValues(alpha: 0.2),
-      borderRadius: BorderRadius.circular(20),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Asset Allocation',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: Colors.black,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Row(
+    return BlocBuilder<AssetBloc, AssetState>(
+      builder: (context, state) {
+        double stockValue = 0;
+        double cryptoValue = 0;
+        double cashValue = 0;
+        
+        if (state is AssetLoaded) {
+          for (var asset in state.assets) {
+            final value = asset.totalQuantity * asset.currentPrice;
+            if (asset.category == 'Stocks' || asset.category == 'Stock') {
+              stockValue += value;
+            } else if (asset.category == 'Crypto' || asset.category == 'Cryptocurrency') {
+              cryptoValue += value;
+            } else {
+              cashValue += value;
+            }
+          }
+        }
+
+        final total = stockValue + cryptoValue + cashValue;
+        final hasAssets = total > 0;
+
+        final double stockPct = hasAssets ? (stockValue / total * 100) : 0.0;
+        final double cryptoPct = hasAssets ? (cryptoValue / total * 100) : 0.0;
+        final double cashPct = hasAssets ? (cashValue / total * 100) : 0.0;
+
+        return Material(
+          color: Colors.white,
+          elevation: 9,
+          shadowColor: Colors.black.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(
-                  width: 120,
-                  height: 120,
-                  child: PieChart(
-                    PieChartData(
-                      sectionsSpace: 2,
-                      centerSpaceRadius: 30,
-                      sections: [
-                        PieChartSectionData(
-                          color: const Color(0xFF4F3FF0),
-                          value: 50,
-                          title: '50%',
-                          radius: 20,
-                          titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
-                        ),
-                        PieChartSectionData(
-                          color: Colors.orange,
-                          value: 30,
-                          title: '30%',
-                          radius: 20,
-                          titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
-                        ),
-                        PieChartSectionData(
-                          color: Colors.green,
-                          value: 20,
-                          title: '20%',
-                          radius: 20,
-                          titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
-                        ),
-                      ],
-                    ),
+                const Text(
+                  'Asset Allocation',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.black,
                   ),
                 ),
-                const SizedBox(width: 24),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildAllocationLegend(const Color(0xFF4F3FF0), 'Stocks', '\$22,615'),
-                      const SizedBox(height: 12),
-                      _buildAllocationLegend(Colors.orange, 'Crypto', '\$13,569'),
-                      const SizedBox(height: 12),
-                      _buildAllocationLegend(Colors.green, 'Cash', '\$9,046'),
-                    ],
-                  ),
+                const SizedBox(height: 24),
+                if (!hasAssets)
+                   const Center(child: Text('No assets to allocate', style: TextStyle(color: Colors.grey)))
+                else Row(
+                  children: [
+                    SizedBox(
+                      width: 120,
+                      height: 120,
+                      child: PieChart(
+                        PieChartData(
+                          sectionsSpace: 2,
+                          centerSpaceRadius: 30,
+                          sections: [
+                            if (stockPct > 0) PieChartSectionData(
+                              color: const Color(0xFF4F3FF0),
+                              value: stockPct,
+                              title: '${stockPct.toStringAsFixed(0)}%',
+                              radius: 20,
+                              titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
+                            ),
+                            if (cryptoPct > 0) PieChartSectionData(
+                              color: Colors.orange,
+                              value: cryptoPct,
+                              title: '${cryptoPct.toStringAsFixed(0)}%',
+                              radius: 20,
+                              titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
+                            ),
+                            if (cashPct > 0) PieChartSectionData(
+                              color: Colors.green,
+                              value: cashPct,
+                              title: '${cashPct.toStringAsFixed(0)}%',
+                              radius: 20,
+                              titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 24),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (stockPct > 0) ...[
+                             _buildAllocationLegend(const Color(0xFF4F3FF0), 'Stocks', '\$${stockValue.toStringAsFixed(2)}'),
+                             const SizedBox(height: 12),
+                          ],
+                          if (cryptoPct > 0) ...[
+                             _buildAllocationLegend(Colors.orange, 'Crypto', '\$${cryptoValue.toStringAsFixed(2)}'),
+                             const SizedBox(height: 12),
+                          ],
+                          if (cashPct > 0) ...[
+                             _buildAllocationLegend(Colors.green, 'Cash', '\$${cashValue.toStringAsFixed(2)}'),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      }
     );
   }
 
@@ -449,79 +501,126 @@ class _WealthPageState extends State<WealthPage> {
               ],
             ),
             const SizedBox(height: 16),
-            SizedBox(
-              height: 160, 
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: 4,
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 16, bottom: 16, left: 4),
-                    child: Material(
-                      elevation: 9,
-                      shadowColor: Colors.black.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(16),
-                      color: Colors.white, 
-                      clipBehavior: Clip.antiAlias,
-                      child: Container(
-                        width: 140,
-                        padding: const EdgeInsets.all(16),
-                        color: const Color(0xFF4F3FF0).withValues(alpha: 0.05),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.directions_car,
-                                color: Color(0xFF4F3FF0),
-                                size: 24,
-                              ),
-                            ),
-                            const Spacer(),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'New Car',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                const Text(
-                                  '\$5k / \$20k',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: LinearProgressIndicator(
-                                value: 0.25,
-                                minHeight: 6,
-                                backgroundColor: Colors.grey.shade200,
-                                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF4F3FF0)),
-                              ),
-                            ),
-                          ],
+            BlocBuilder<PortfolioBloc, PortfolioState>(
+              builder: (context, state) {
+                if (state is PortfolioLoading) {
+                  return const SizedBox(height: 160, child: Center(child: CircularProgressIndicator()));
+                }
+                if (state is PortfolioLoaded) {
+                  final goals = state.portfolios.where((p) => (p.targetGoal ?? 0) > 0).toList();
+                  if (goals.isEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => const CreatePortfolioPage()));
+                        },
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          height: 160,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF4F3FF0).withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFF4F3FF0).withValues(alpha: 0.3), width: 1.5),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.add_circle_outline, color: Color(0xFF4F3FF0), size: 40),
+                              const SizedBox(height: 12),
+                              const Text('Create your first goal', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 16)),
+                              const SizedBox(height: 4),
+                              Text('Start tracking your investments', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                            ],
+                          ),
                         ),
                       ),
+                    );
+                  }
+                  return SizedBox(
+                    height: 160,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: goals.length,
+                      itemBuilder: (context, index) {
+                        final goal = goals[index];
+                        final currentProgress = 0.0; // Needs asset value calculation in a real app
+                        final progressPercent = (currentProgress / goal.targetGoal!).clamp(0.0, 1.0);
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 16, bottom: 16, left: 4),
+                          child: Material(
+                            elevation: 9,
+                            shadowColor: Colors.black.withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(16),
+                            color: Colors.white,
+                            clipBehavior: Clip.antiAlias,
+                            child: Container(
+                              width: 140,
+                              padding: const EdgeInsets.all(16),
+                              color: const Color(0xFF4F3FF0).withValues(alpha: 0.05),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      // ignore: non_const_argument_for_const_parameter
+                                      IconData(goal.icon, fontFamily: 'MaterialIcons'),
+                                      color: const Color(0xFF4F3FF0),
+                                      size: 24,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        goal.name,
+                                        style: const TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black87,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '\$${currentProgress.toStringAsFixed(0)} / \$${goal.targetGoal!.toStringAsFixed(0)}',
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: LinearProgressIndicator(
+                                      value: progressPercent,
+                                      minHeight: 6,
+                                      backgroundColor: Colors.grey.shade200,
+                                      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF4F3FF0)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   );
-                },
-              ),
+                }
+                return const SizedBox(height: 160);
+              },
             ),
           ],
         ),
@@ -635,11 +734,51 @@ class _WealthPageState extends State<WealthPage> {
               ],
             ),
             const SizedBox(height: 16),
-            _buildHoldingItem(icon: Icons.apple, color: Colors.grey.shade800, ticker: 'AAPL', name: 'Apple Inc.', shares: '15.5', price: '\$2,934.15', change: '+2.4%'),
-            const Divider(height: 24, thickness: 0.5),
-            _buildHoldingItem(icon: Icons.currency_bitcoin, color: Colors.orange, ticker: 'BTC', name: 'Bitcoin', shares: '0.25', price: '\$10,537.50', change: '+5.6%'),
-            const Divider(height: 24, thickness: 0.5),
-            _buildHoldingItem(icon: Icons.electric_car, color: Colors.red, ticker: 'TSLA', name: 'Tesla', shares: '10.0', price: '\$2,485.00', change: '-1.2%'),
+            BlocBuilder<AssetBloc, AssetState>(
+              builder: (context, state) {
+                if (state is AssetLoading) {
+                   return const Center(child: CircularProgressIndicator());
+                }
+                if (state is AssetLoaded) {
+                   if (state.assets.isEmpty) {
+                      return Padding(
+                         padding: const EdgeInsets.symmetric(vertical: 32),
+                         child: Center(
+                            child: Column(
+                              children: [
+                                Icon(Icons.account_balance_wallet, color: Colors.grey.shade300, size: 48),
+                                const SizedBox(height: 16),
+                                Text('No holdings yet', style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold, fontSize: 16)),
+                                const SizedBox(height: 4),
+                                Text('Create a goal and add assets', style: TextStyle(color: Colors.grey.shade400, fontSize: 14)),
+                              ],
+                            ),
+                         ),
+                      );
+                   }
+                   return Column(
+                      children: state.assets.map((asset) {
+                         final isCrypto = asset.category == 'Crypto' || asset.category == 'Cryptocurrency';
+                         return Column(
+                            children: [
+                               _buildHoldingItem(
+                                  icon: isCrypto ? Icons.currency_bitcoin : Icons.business,
+                                  color: isCrypto ? Colors.orange : Colors.blueAccent,
+                                  ticker: asset.tickerSymbol,
+                                  name: asset.name,
+                                  shares: asset.totalQuantity.toStringAsFixed(2),
+                                  price: '\$${(asset.totalQuantity * asset.currentPrice).toStringAsFixed(2)}',
+                                  change: '${asset.currentPrice > 0 ? '+' : ''}0.0%', // Need historical for real change
+                               ),
+                               if (asset != state.assets.last) const Divider(height: 24, thickness: 0.5),
+                            ],
+                         );
+                      }).toList(),
+                   );
+                }
+                return const SizedBox();
+              }
+            ),
           ],
         ),
       ),

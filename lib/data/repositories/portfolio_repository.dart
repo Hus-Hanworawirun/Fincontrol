@@ -11,12 +11,13 @@ class PortfolioRepository {
     return _firestore
         .collection('portfolios')
         .where('userId', isEqualTo: userId)
-        .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
+      final list = snapshot.docs
           .map((doc) => PortfolioModel.fromMap(doc.data(), doc.id))
           .toList();
+      list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return list;
     });
   }
 

@@ -11,12 +11,13 @@ class TransactionRepository {
     return _firestore
         .collection('transactions')
         .where('userId', isEqualTo: userId)
-        .orderBy('date', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
+      final list = snapshot.docs
           .map((doc) => TransactionModel.fromMap(doc.data(), doc.id))
           .toList();
+      list.sort((a, b) => b.date.compareTo(a.date));
+      return list;
     });
   }
 

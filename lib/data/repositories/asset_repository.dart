@@ -7,15 +7,15 @@ class AssetRepository {
   AssetRepository({FirebaseFirestore? firestore})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
-  Stream<List<AssetModel>> getAssets(String portfolioId) {
-    return _firestore
-        .collection('assets')
-        .where('portfolioId', isEqualTo: portfolioId)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => AssetModel.fromMap(doc.data(), doc.id))
-          .toList();
+  Stream<List<AssetModel>> getAssets([String? portfolioId]) {
+    var query = _firestore.collection('assets');
+    if (portfolioId != null && portfolioId.isNotEmpty) {
+      return query.where('portfolioId', isEqualTo: portfolioId).snapshots().map((snapshot) {
+        return snapshot.docs.map((doc) => AssetModel.fromMap(doc.data(), doc.id)).toList();
+      });
+    }
+    return query.snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) => AssetModel.fromMap(doc.data(), doc.id)).toList();
     });
   }
 

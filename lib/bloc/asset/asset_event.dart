@@ -9,11 +9,11 @@ abstract class AssetEvent extends Equatable {
 }
 
 class LoadAssets extends AssetEvent {
-  final String portfolioId;
-  const LoadAssets(this.portfolioId);
+  final String? portfolioId;
+  const LoadAssets([this.portfolioId]);
   
   @override
-  List<Object> get props => [portfolioId];
+  List<Object> get props => portfolioId != null ? [portfolioId!] : [];
 }
 
 class AddAsset extends AssetEvent {
@@ -25,11 +25,11 @@ class AddAsset extends AssetEvent {
 }
 
 class SyncAssetPrices extends AssetEvent {
-  final String portfolioId;
-  const SyncAssetPrices(this.portfolioId);
+  final String? portfolioId;
+  const SyncAssetPrices([this.portfolioId]);
   
   @override
-  List<Object> get props => [portfolioId];
+  List<Object> get props => portfolioId != null ? [portfolioId!] : [];
 }
 
 class AssetsUpdated extends AssetEvent {
