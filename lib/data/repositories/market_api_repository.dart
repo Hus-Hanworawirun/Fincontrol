@@ -2,17 +2,25 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class MarketApiRepository {
-  final String _apiKey = 'YOUR_ALPHA_VANTAGE_API_KEY';
-  final String _baseUrl = 'https://www.alphavantage.co/query';
+  final String _baseUrl = 'https://query1.finance.yahoo.com/v8/finance/chart';
 
-  Future<double> getStockPrice(String symbol) async {
-    final url = Uri.parse('$_baseUrl?function=GLOBAL_QUOTE&symbol=$symbol&apikey=$_apiKey');
+  Future<double> getPrice(String tickerSymbol) async {
+    if (tickerSymbol.isEmpty) return 0.0;
+    
+    final url = Uri.parse('$_baseUrl/$tickerSymbol');
     try {
-      final response = await http.get(url);
+      final response = await http.get(
+        url,
+        headers: {'User-Agent': 'Mozilla/5.0'},
+      );
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (data.containsKey('Global Quote') && data['Global Quote'].containsKey('05. price')) {
-          return double.parse(data['Global Quote']['05. price']);
+        final result = data['chart']?['result'];
+        if (result != null && result.isNotEmpty) {
+          final meta = result[0]['meta'];
+          if (meta != null && meta['regularMarketPrice'] != null) {
+            return (meta['regularMarketPrice'] as num).toDouble();
+          }
         }
       }
       return 0.0;
@@ -21,21 +29,35 @@ class MarketApiRepository {
     }
   }
 
-  Future<double> getCryptoPrice(String symbol) async {
-    // Note: Alpha Vantage uses CURRENCY_EXCHANGE_RATE for crypto to fiat.
-    final url = Uri.parse('$_baseUrl?function=CURRENCY_EXCHANGE_RATE&from_currency=$symbol&to_currency=USD&apikey=$_apiKey');
+  Future<double> getStockPrice(String tickerSymbol) => getPrice(tickerSymbol);
+  
+  Future<double> getCryptoPrice(String tickerSymbol) => getPrice(tickerSymbol);
+
+  Future<List<double>> getChartData(String tickerSymbol, {String interval = '15m', String range = '1d'}) async {
+    if (tickerSymbol.isEmpty) return [];
+    
+    final url = Uri.parse('$_baseUrl/$tickerSymbol?interval=$interval&range=$range');
     try {
-      final response = await http.get(url);
+      final response = await http.get(
+        url,
+        headers: {'User-Agent': 'Mozilla/5.0'},
+      );
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (data.containsKey('Realtime Currency Exchange Rate') && 
-            data['Realtime Currency Exchange Rate'].containsKey('5. Exchange Rate')) {
-          return double.parse(data['Realtime Currency Exchange Rate']['5. Exchange Rate']);
+        final result = data['chart']?['result'];
+        if (result != null && result.isNotEmpty) {
+          final indicators = result[0]['indicators'];
+          if (indicators != null && indicators['quote'] != null && indicators['quote'].isNotEmpty) {
+            final closePrices = indicators['quote'][0]['close'];
+            if (closePrices is List) {
+              return closePrices.where((e) => e != null).map((e) => (e as num).toDouble()).toList();
+            }
+          }
         }
       }
-      return 0.0;
+      return [];
     } catch (e) {
-      return 0.0;
+      return [];
     }
   }
 }

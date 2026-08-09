@@ -3,6 +3,7 @@ class AssetModel {
   final String userId;
   final String portfolioId;
   final String name;
+  final String tickerSymbol;
   final String category;
   final double totalQuantity;
   final double averageBuyPrice;
@@ -13,6 +14,7 @@ class AssetModel {
     required this.userId,
     required this.portfolioId,
     required this.name,
+    required this.tickerSymbol,
     required this.category,
     required this.totalQuantity,
     required this.averageBuyPrice,
@@ -25,6 +27,7 @@ class AssetModel {
       userId: map['userId'] as String? ?? '',
       portfolioId: map['portfolioId'] as String? ?? '',
       name: map['name'] as String? ?? '',
+      tickerSymbol: map['tickerSymbol'] as String? ?? '',
       category: map['category'] as String? ?? '',
       totalQuantity: (map['totalQuantity'] as num?)?.toDouble() ?? 0.0,
       averageBuyPrice: (map['averageBuyPrice'] as num?)?.toDouble() ?? 0.0,
@@ -37,6 +40,7 @@ class AssetModel {
       'userId': userId,
       'portfolioId': portfolioId,
       'name': name,
+      'tickerSymbol': tickerSymbol,
       'category': category,
       'totalQuantity': totalQuantity,
       'averageBuyPrice': averageBuyPrice,

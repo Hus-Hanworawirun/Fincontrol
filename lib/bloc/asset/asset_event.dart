@@ -24,6 +24,14 @@ class AddAsset extends AssetEvent {
   List<Object> get props => [asset];
 }
 
+class SyncAssetPrices extends AssetEvent {
+  final String portfolioId;
+  const SyncAssetPrices(this.portfolioId);
+  
+  @override
+  List<Object> get props => [portfolioId];
+}
+
 class AssetsUpdated extends AssetEvent {
   final List<AssetModel> assets;
   const AssetsUpdated(this.assets);

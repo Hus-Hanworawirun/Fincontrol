@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../data/models/asset_model.dart';
 
 class AddEntrySheet extends StatefulWidget {
-  final Map<String, dynamic>? asset;
+  final AssetModel? asset;
   
   const AddEntrySheet({super.key, this.asset});
 
@@ -21,7 +22,7 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
   void initState() {
     super.initState();
     if (widget.asset != null) {
-      _symbolController.text = widget.asset!['ticker'];
+      _symbolController.text = widget.asset!.tickerSymbol;
     }
   }
 

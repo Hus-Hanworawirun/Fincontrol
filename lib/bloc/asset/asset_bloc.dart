@@ -3,16 +3,23 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'asset_event.dart';
 import 'asset_state.dart';
 import '../../data/repositories/asset_repository.dart';
+import '../../data/repositories/market_api_repository.dart';
 
 class AssetBloc extends Bloc<AssetEvent, AssetState> {
   final AssetRepository _assetRepository;
+  final MarketApiRepository _marketApiRepository;
   StreamSubscription? _assetSubscription;
+  Timer? _syncTimer;
 
-  AssetBloc({required AssetRepository assetRepository})
-      : _assetRepository = assetRepository,
+  AssetBloc({
+    required AssetRepository assetRepository,
+    required MarketApiRepository marketApiRepository,
+  })  : _assetRepository = assetRepository,
+        _marketApiRepository = marketApiRepository,
         super(AssetInitial()) {
     on<LoadAssets>(_onLoadAssets);
     on<AddAsset>(_onAddAsset);
+    on<SyncAssetPrices>(_onSyncAssetPrices);
     on<AssetsUpdated>((event, emit) => emit(AssetLoaded(event.assets)));
     on<AssetFailed>((event, emit) => emit(AssetError(event.error)));
   }
@@ -32,6 +39,17 @@ class AssetBloc extends Bloc<AssetEvent, AssetState> {
         }
       },
     );
+
+    _syncTimer?.cancel();
+    _syncTimer = Timer.periodic(const Duration(seconds: 109), (_) {
+      if (!isClosed) {
+        add(SyncAssetPrices(event.portfolioId));
+      }
+    });
+
+    if (!isClosed) {
+      add(SyncAssetPrices(event.portfolioId));
+    }
   }
 
   void _onAddAsset(AddAsset event, Emitter<AssetState> emit) async {
@@ -42,8 +60,34 @@ class AssetBloc extends Bloc<AssetEvent, AssetState> {
     }
   }
 
+  void _onSyncAssetPrices(SyncAssetPrices event, Emitter<AssetState> emit) async {
+    try {
+      final currentState = state;
+      if (currentState is AssetLoaded) {
+        for (final asset in currentState.assets) {
+          if (asset.tickerSymbol.isEmpty) continue;
+
+          double price = 0.0;
+          if (asset.category == 'Stocks' || asset.category == 'Stock') {
+            price = await _marketApiRepository.getStockPrice(asset.tickerSymbol);
+          } else if (asset.category == 'Crypto' || asset.category == 'Cryptocurrency') {
+            price = await _marketApiRepository.getCryptoPrice(asset.tickerSymbol);
+          }
+
+          if (price > 0 && price != asset.currentPrice) {
+            await _assetRepository.updateAssetCurrentPrice(asset.id, price);
+          }
+        }
+      }
+    } catch (e) {
+      // Fail silently for background syncs to avoid disrupting the UI
+      print('Sync error: $e');
+    }
+  }
+
   @override
   Future<void> close() {
+    _syncTimer?.cancel();
     _assetSubscription?.cancel();
     return super.close();
   }
