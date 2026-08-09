@@ -1,3 +1,4 @@
+import 'package:fincontrol/view/wealth/add_entry_sheet.dart';
 import 'package:flutter/material.dart';
 
 class AssetDetailPage extends StatelessWidget {
@@ -232,7 +233,14 @@ class AssetDetailPage extends StatelessWidget {
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                        onPressed: () {},
+                        onPressed: () {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (context) => AddEntrySheet(asset: asset),
+                          );
+                        },
                         child: const Text(
                           'Invest',
                           style: TextStyle(
