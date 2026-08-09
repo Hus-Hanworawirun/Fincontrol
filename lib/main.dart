@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'firebase_options.dart';
 import 'bloc/auth/auth_bloc.dart';
-import 'view/dashboard/home_page.dart';
+import 'view/navigationbar/bottom_navigation_bar.dart';
 import 'view/splash/splash_page.dart';
 
 void main() async {
@@ -49,9 +49,9 @@ class AuthWrapper extends StatelessWidget {
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        // If a user is logged in, show the HomePage
+        // If a user is logged in, show the MainNavigationShell
         if (snapshot.hasData) {
-          return const HomePage();
+          return const MainNavigationShell();
         }
         // Otherwise, show the splash/GetStartedView
         return const GetStartedView();

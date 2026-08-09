@@ -1,72 +1,11 @@
-import '../widgets/income_expense_item.dart';
-import 'package:fincontrol/view/dashboard/activity_page.dart';
-import 'package:fincontrol/view/dashboard/profile_page.dart';
-import 'package:fincontrol/view/dashboard/wealth_page.dart';
-import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'package:fincontrol/view/wealth/invest_page.dart';
+import 'package:fincontrol/view/widgets/income_expense_item.dart';
+import 'package:flutter/material.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
-
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  int _selectedIndex = 0;
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final List<Widget> pages = [
-      OverviewWidget(
-        onSeeAllActivity: () => _onItemTapped(1),
-      ),
-      const ActivityPage(),
-      const WealthPage(),
-      const ProfilePage(),
-    ];
-
-    return Scaffold(
-      body: pages.elementAt(_selectedIndex),
-      floatingActionButton: SizedBox(
-        height: 64,
-        width: 64,
-        child: FloatingActionButton(
-          onPressed: () {},
-          backgroundColor: const Color(0xFF4F3FF0),
-          shape: const CircleBorder(),
-          child: const Icon(Icons.add, color: Colors.white, size: 32),
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Home'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month),
-            label: 'Activity',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.pie_chart), label: 'Wealth'),
-          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Profile'),
-        ],
-      ),
-    );
-  }
-}
-
-class OverviewWidget extends StatelessWidget {
+class HomePage extends StatelessWidget {
   final VoidCallback? onSeeAllActivity;
-  
-  const OverviewWidget({super.key, this.onSeeAllActivity});
+  const HomePage({super.key, this.onSeeAllActivity});
 
   @override
   Widget build(BuildContext context) {
@@ -93,29 +32,40 @@ class OverviewWidget extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: Colors.blue.shade100,
-                      radius: 32,
-                      child: const Icon(Icons.person, color: Colors.blue),
-                    ),
-                    const SizedBox(width: 12),
-                    const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Hello,',
-                          style: TextStyle(fontSize: 24, color: Colors.white),
+                Expanded(
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: Colors.blue.shade100,
+                        radius: 32,
+                        child: const Icon(Icons.person, color: Colors.blue),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Hello,',
+                              style: TextStyle(fontSize: 24, color: Colors.white),
+                            ),
+                            Text(
+                              'The One Who Wait',
+                              style: TextStyle(
+                                fontSize: 24,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ],
                         ),
-                        Text(
-                          'The One Who Wait',
-                          style: TextStyle(fontSize: 24, color: Colors.white, fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 Row(
                   children: [
                     IconButton(
@@ -125,7 +75,14 @@ class OverviewWidget extends StatelessWidget {
                         backgroundColor: Colors.white,
                         padding: const EdgeInsets.all(12),
                       ),
-                      onPressed: () {}
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const InvestPage(),
+                          ),
+                        );
+                      }
                     ),
                     const SizedBox(width: 8),
                     IconButton(
@@ -141,7 +98,7 @@ class OverviewWidget extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 32), // Space between header and Total Balance card
+            const SizedBox(height: 32), 
             Material(
               elevation: 9,
               shadowColor: Colors.black.withValues(alpha: 0.5),
@@ -453,3 +410,4 @@ class OverviewWidget extends StatelessWidget {
     );
   }
 }
+

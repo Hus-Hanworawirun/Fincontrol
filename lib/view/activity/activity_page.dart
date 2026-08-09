@@ -1,3 +1,4 @@
+import 'package:fincontrol/view/wealth/invest_page.dart';
 import 'package:fincontrol/view/widgets/income_expense_item.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';
@@ -103,7 +104,14 @@ class _ActivityPageState extends State<ActivityPage> {
                           backgroundColor: Colors.white,
                           padding: const EdgeInsets.all(12),
                         ),
-                        onPressed: () {}
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const InvestPage(),
+                            ),
+                          );
+                        }
                       ),
                       const SizedBox(width: 8),
                       IconButton(
