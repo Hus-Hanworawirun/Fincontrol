@@ -42,7 +42,9 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
           onPressed: () {
             showModalBottomSheet(
               context: context,
-              builder: (context) => AddTransactionSheet(),
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (context) => const AddTransactionSheet(),
             );
           },
           backgroundColor: const Color(0xFF4F3FF0),

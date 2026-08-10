@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../../core/app_categories.dart';
+import '../../core/gemini_service.dart';
+
+enum TransactionType { income, expense }
 
 class AddTransactionSheet extends StatefulWidget {
   const AddTransactionSheet({super.key});
@@ -8,31 +13,90 @@ class AddTransactionSheet extends StatefulWidget {
 }
 
 class _AddTransactionSheetState extends State<AddTransactionSheet> {
-  final TextEditingController _amountController = TextEditingController();
-  final TextEditingController _noteController = TextEditingController();
-  String _selectedCategory = 'Food';
-  DateTime _selectedDate = DateTime.now();
+  TransactionType _type = TransactionType.expense;
+
+  final _noteController   = TextEditingController();
+  final _amountController = TextEditingController();
+  DateTime _selectedDate  = DateTime.now();
+  String? _selectedCategory;
+
+  List<String> _suggestions = [];
+  bool _loadingSuggestions  = false;
+
+  static const _purple  = Color(0xFF4F3FF0);
+  static const _fieldBg = Color(0xFFF4F2F8);
 
   @override
   void dispose() {
-    _amountController.dispose();
     _noteController.dispose();
+    _amountController.dispose();
     super.dispose();
+  }
+
+  Future<void> _onSuggest() async {
+    final note = _noteController.text.trim();
+    if (note.isEmpty) return;
+
+    // extract number from note → pre-fill amount if empty
+    final amountMatch = RegExp(r'(\d+\.?\d*)').firstMatch(note);
+    if (amountMatch != null && _amountController.text.isEmpty) {
+      _amountController.text = amountMatch.group(1)!;
+    }
+
+    setState(() {
+      _loadingSuggestions = true;
+      _selectedCategory   = null;
+      _suggestions        = [];
+    });
+
+    final results = await GeminiService.suggestCategories(
+      note: note,
+      isIncome: _type == TransactionType.income,
+    );
+
+    setState(() {
+      _suggestions        = results;
+      _loadingSuggestions = false;
+    });
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: const ColorScheme.light(primary: _purple),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked != null) setState(() => _selectedDate = picked);
+  }
+
+  void _submit() {
+    // TODO: save to Firestore via TransactionModel
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
+    final isIncome    = _type == TransactionType.income;
+    final accentColor = isIncome ? Colors.green : Colors.red;
+
     return Container(
       padding: EdgeInsets.only(
         left: 24,
         right: 24,
-        top: 24,
+        top: 16,
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(24),
+          topLeft:  Radius.circular(24),
           topRight: Radius.circular(24),
         ),
       ),
@@ -41,118 +105,167 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Handle bar
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Add Transaction',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
+                const Text('Add Transaction',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                 IconButton(
                   icon: const Icon(Icons.close, color: Colors.grey),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
-            const Text(
-              'Amount',
-              style: TextStyle(color: Colors.grey, fontSize: 14, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _amountController,
-              keyboardType: TextInputType.number,
-              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-              decoration: InputDecoration(
-                hintText: '0.00',
-                prefixText: '\$ ',
-                prefixStyle: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor: const Color(0xFFF4F2F8),
+            const SizedBox(height: 16),
+
+            // Income / Expense toggle
+            Container(
+              height: 44,
+              decoration: BoxDecoration(
+                color: _fieldBg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  _TypeTab(
+                    label: 'Income', selected: isIncome, color: Colors.green,
+                    onTap: () => setState(() {
+                      _type = TransactionType.income;
+                      _suggestions = []; _selectedCategory = null;
+                    }),
+                  ),
+                  _TypeTab(
+                    label: 'Expense', selected: !isIncome, color: Colors.red,
+                    onTap: () => setState(() {
+                      _type = TransactionType.expense;
+                      _suggestions = []; _selectedCategory = null;
+                    }),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'Category',
-              style: TextStyle(color: Colors.grey, fontSize: 14, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              initialValue: _selectedCategory,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor: const Color(0xFFF4F2F8),
-              ),
-              items: ['Food', 'Transport', 'Shopping', 'Bills', 'Other']
-                  .map((String category) {
-                return DropdownMenuItem(
-                  value: category,
-                  child: Text(category),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                if (newValue != null) {
-                  setState(() {
-                    _selectedCategory = newValue;
-                  });
-                }
-              },
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Note',
-              style: TextStyle(color: Colors.grey, fontSize: 14, fontWeight: FontWeight.bold),
-            ),
+            const SizedBox(height: 20),
+
+            // Note (first)
+            _Label('Note'),
             const SizedBox(height: 8),
             TextField(
               controller: _noteController,
-              decoration: InputDecoration(
-                hintText: 'Enter a note',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _onSuggest(),
+              decoration: _inputDeco('e.g. Lunch, Salary...'),
+            ),
+            const SizedBox(height: 8),
+
+            // AI Suggest button
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: _loadingSuggestions ? null : _onSuggest,
+                icon: _loadingSuggestions
+                    ? const SizedBox(width: 14, height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.auto_awesome, size: 16),
+                label: const Text('Suggest category'),
+                style: TextButton.styleFrom(foregroundColor: _purple),
+              ),
+            ),
+
+            // Suggestion chips
+            if (_suggestions.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Wrap(
+                spacing: 8, runSpacing: 8,
+                children: _suggestions.map((s) {
+                  final sel = _selectedCategory == s;
+                  return GestureDetector(
+                    onTap: () => setState(() => _selectedCategory = s),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: sel ? _purple : _fieldBg,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: sel ? _purple : Colors.grey.shade300),
+                      ),
+                      child: Text(s,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: sel ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 12),
+            ],
+
+            // Category dropdown
+            _Label('Category'),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: _fieldBg,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  isExpanded: true,
+                  value: _selectedCategory,
+                  hint: const Text('Select category',
+                    style: TextStyle(color: Colors.grey, fontSize: 15)),
+                  items: AppCategories.forType(isIncome).map((c) =>
+                    DropdownMenuItem(value: c.label, child: Text(c.label))
+                  ).toList(),
+                  onChanged: (v) => setState(() => _selectedCategory = v),
                 ),
-                filled: true,
-                fillColor: const Color(0xFFF4F2F8),
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'When did it happen?',
-              style: TextStyle(color: Colors.grey, fontSize: 14, fontWeight: FontWeight.bold),
-            ),
+
+            // Amount (after note)
+            _Label('Amount'),
             const SizedBox(height: 8),
-            InkWell(
-              onTap: () async {
-                final DateTime? picked = await showDatePicker(
-                  context: context,
-                  initialDate: _selectedDate,
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime(2101),
-                );
-                if (picked != null && picked != _selectedDate) {
-                  setState(() {
-                    _selectedDate = picked;
-                  });
-                }
-              },
+            TextField(
+              controller: _amountController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              decoration: _inputDeco('0.00',
+                prefix: Text('\$  ',
+                  style: TextStyle(
+                    fontSize: 24, fontWeight: FontWeight.bold, color: accentColor,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Date
+            _Label('When did it happen?'),
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: _pickDate,
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF4F2F8),
+                  color: _fieldBg,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
@@ -160,7 +273,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                     const Icon(Icons.calendar_today, color: Colors.grey),
                     const SizedBox(width: 12),
                     Text(
-                      "${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}",
+                      '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
                       style: const TextStyle(fontSize: 16),
                     ),
                   ],
@@ -168,31 +281,91 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
               ),
             ),
             const SizedBox(height: 32),
+
+            // Save button
             SizedBox(
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4F3FF0),
+                  backgroundColor: _purple,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
                 ),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: const Text(
-                  'Add Transaction',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                onPressed: _submit,
+                child: Text(
+                  isIncome ? 'Save Income' : 'Save Expense',
+                  style: const TextStyle(
+                    color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  InputDecoration _inputDeco(String hint, {Widget? prefix}) => InputDecoration(
+    hintText: hint,
+    hintStyle: const TextStyle(color: Colors.grey),
+    prefix: prefix,
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(16),
+      borderSide: const BorderSide(color: _purple, width: 1.5)),
+    filled: true,
+    fillColor: _fieldBg,
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+  );
+}
+
+class _TypeTab extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final Color color;
+  final VoidCallback onTap;
+  const _TypeTab({required this.label, required this.selected, required this.color, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          margin: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: selected ? color.withValues(alpha: 0.12) : Colors.transparent,
+            borderRadius: BorderRadius.circular(9),
+          ),
+          alignment: Alignment.center,
+          child: Text(label,
+            style: TextStyle(
+              fontSize: 14, fontWeight: FontWeight.w700,
+              color: selected ? color : Colors.grey,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Label extends StatelessWidget {
+  final String text;
+  const _Label(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(text,
+      style: const TextStyle(
+        color: Colors.grey, fontSize: 14, fontWeight: FontWeight.bold,
       ),
     );
   }
