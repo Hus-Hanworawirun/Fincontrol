@@ -8,9 +8,8 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
   final TransactionRepository _transactionRepository;
   StreamSubscription? _transactionSubscription;
 
-  TransactionBloc({required TransactionRepository transactionRepository})
-      : _transactionRepository = transactionRepository,
-        super(TransactionInitial()) {
+  TransactionBloc({required this._transactionRepository})
+      : super(TransactionInitial()) {
     on<LoadTransactions>(_onLoadTransactions);
     on<AddTransaction>(_onAddTransaction);
     on<TransactionsUpdated>((event, emit) => emit(TransactionLoaded(event.transactions)));

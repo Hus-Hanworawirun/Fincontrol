@@ -8,9 +8,8 @@ class PortfolioBloc extends Bloc<PortfolioEvent, PortfolioState> {
   final PortfolioRepository _portfolioRepository;
   StreamSubscription? _portfolioSubscription;
 
-  PortfolioBloc({required PortfolioRepository portfolioRepository})
-      : _portfolioRepository = portfolioRepository,
-        super(PortfolioInitial()) {
+  PortfolioBloc({required this._portfolioRepository})
+      : super(PortfolioInitial()) {
     on<LoadPortfolios>(_onLoadPortfolios);
     on<AddPortfolio>(_onAddPortfolio);
     on<PortfoliosUpdated>((event, emit) => emit(PortfolioLoaded(event.portfolios)));

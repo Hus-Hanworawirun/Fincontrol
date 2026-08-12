@@ -4,6 +4,7 @@ import 'package:fincontrol/view/navigationbar/add_transaction_sheet.dart';
 import 'package:fincontrol/view/profile/profile_page.dart';
 import 'package:fincontrol/view/wealth/wealth_page.dart';
 import 'package:flutter/material.dart';
+import '../widgets/glass_bottom_nav.dart';
 
 class MainNavigationShell extends StatefulWidget {
   const MainNavigationShell({super.key});
@@ -13,9 +14,19 @@ class MainNavigationShell extends StatefulWidget {
 }
 
 class _MainNavigationShellState extends State<MainNavigationShell> {
-  int _selectedIndex = 0;
+  int _selectedIndex = 0; // 0: Home, 1: Wealth, 3: Activity, 4: Profile
 
   void _onItemTapped(int index) {
+    if (index == 2) {
+      // Add button
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => const AddTransactionSheet(),
+      );
+      return;
+    }
     setState(() {
       _selectedIndex = index;
     });
@@ -25,47 +36,46 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   Widget build(BuildContext context) {
     final List<Widget> pages = [
       HomePage(
-        onSeeAllActivity: () => _onItemTapped(1),
-        onGoToWealth: () => _onItemTapped(2),
+        onSeeAllActivity: () => _onItemTapped(3),
+        onGoToWealth: () => _onItemTapped(1),
       ),
-      const ActivityPage(),
       const WealthPage(),
+      const SizedBox.shrink(), // Placeholder for add button
+      const ActivityPage(),
       const ProfilePage(),
     ];
 
-    return Scaffold(
-      body: pages.elementAt(_selectedIndex),
-      floatingActionButton: SizedBox(
-        height: 64,
-        width: 64,
-        child: FloatingActionButton(
-          onPressed: () {
-            showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (context) => const AddTransactionSheet(),
-            );
-          },
-          backgroundColor: const Color(0xFF4F3FF0),
-          shape: const CircleBorder(),
-          child: const Icon(Icons.add, color: Colors.white, size: 32),
-        ),
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: isDarkMode 
+          ? const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF0F172A), Color(0xFF1E1B4B)],
+            )
+          : const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFF8FAFC), Color(0xFFE0E7FF)],
+            ),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Home'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month),
-            label: 'Activity',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.pie_chart), label: 'Wealth'),
-          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Profile'),
-        ],
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        extendBody: true,
+        body: Stack(
+          children: [
+            pages.elementAt(_selectedIndex),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: GlassBottomNav(
+                currentIndex: _selectedIndex,
+                onTap: _onItemTapped,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

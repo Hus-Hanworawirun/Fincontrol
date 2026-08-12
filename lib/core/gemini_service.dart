@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'app_categories.dart';
 
@@ -55,7 +56,7 @@ Example output: ["Food & Dining", "Grocery", "Other Expense"]
       ).toList();
 
     } catch (e) {
-      print('[Gemini error]: $e');
+      debugPrint('[Gemini error]: $e');
       return [];
     }
   }

@@ -7,8 +7,9 @@ class GetStartedView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color;
+    
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FE), // Light background
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 48.0),
@@ -36,7 +37,7 @@ class GetStartedView extends StatelessWidget {
                     style: GoogleFonts.inter(
                       fontSize: 32,
                       fontWeight: FontWeight.w800,
-                      color: const Color(0xFF673AB7), // Tertiary
+                      color: Theme.of(context).colorScheme.primary,
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -46,7 +47,7 @@ class GetStartedView extends StatelessWidget {
                     style: GoogleFonts.inter(
                       fontSize: 32,
                       fontWeight: FontWeight.w900,
-                      color: const Color(0xFF1A1A1A), // Neutral
+                      color: textColor,
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -64,7 +65,7 @@ class GetStartedView extends StatelessWidget {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4F3FF0), // Primary
+                    backgroundColor: Theme.of(context).colorScheme.primary, // Primary
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),

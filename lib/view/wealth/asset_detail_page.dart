@@ -1,10 +1,11 @@
-import 'dart:ui';
 import 'package:fincontrol/view/wealth/add_entry_sheet.dart';
+import 'package:fincontrol/view/notifications/notifications_page.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../../data/models/asset_model.dart';
 import '../../data/repositories/market_api_repository.dart';
+import '../widgets/glass_container.dart';
 
 class AssetDetailPage extends StatefulWidget {
   final AssetModel asset;
@@ -23,20 +24,6 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
   double? _fetchedChangePercent;
   
   Map<String, dynamic>? _fetchedStats;
-
-  // Colors
-  static const Color _bg = Color(0xFFF4F3F9);
-  static const Color _card = Color(0xFFFFFFFF);
-  static const Color _ink = Color(0xFF14151F);
-  static const Color _inkSoft = Color(0xFF6E7080);
-  static const Color _inkFaint = Color(0xFFA6A7B5);
-  static const Color _indigo = Color(0xFF4B3FE4);
-  static const Color _indigoSoft = Color(0xFFEDEBFC);
-  static const Color _green = Color(0xFF14944B);
-  static const Color _greenSoft = Color(0xFFE4F5EA);
-  static const Color _red = Color(0xFFD23A3A);
-  static const Color _amber = Color(0xFFB8790E);
-  static const Color _line = Color(0xFFE7E6F0);
 
   @override
   void initState() {
@@ -101,13 +88,13 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
 
   Widget _buildChart(List<double> data, bool isPositive) {
     if (data.isEmpty) {
-      return Icon(Icons.show_chart, size: 100, color: isPositive ? _green : _red);
+      return Icon(Icons.show_chart, size: 100, color: isPositive ? Colors.greenAccent.shade400 : Colors.redAccent.shade400);
     }
     
     final spots = data.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value)).toList();
     final minY = data.reduce((a, b) => a < b ? a : b);
     final maxY = data.reduce((a, b) => a > b ? a : b);
-    final color = isPositive ? _green : _red;
+    final color = isPositive ? Colors.greenAccent.shade400 : Colors.redAccent.shade400;
 
     return LineChart(
       LineChartData(
@@ -159,57 +146,79 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
     final volume = _fetchedStats?['regularMarketVolume'];
     final mktCap = _fetchedStats?['marketCap'];
 
-    return Scaffold(
-      backgroundColor: _bg,
-      body: SafeArea(
-        bottom: false,
-        child: Stack(
-          children: [
-            Column(
-              children: [
-                _buildTopBar(context),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.only(left: 20, right: 20, top: 4, bottom: 128),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildIdentityRow(asset),
-                        const SizedBox(height: 14),
-                        _buildTagsRow(asset),
-                        const SizedBox(height: 22),
-                        _buildPriceBlock(displayPrice, changeValue, changePercent, isPositive),
-                        const SizedBox(height: 18),
-                        _buildChartCard(displayPrice, isPositive),
-                        const SizedBox(height: 14),
-                        _buildRangeRow(),
-                        const SizedBox(height: 22),
-                        _buildStatsCard(open, high, low, prevClose, volume, mktCap),
-                      ],
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color;
+    final mutedTextColor = Theme.of(context).textTheme.bodySmall?.color;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: isDarkMode 
+          ? const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF0F172A), Color(0xFF1E1B4B)],
+            )
+          : const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFF8FAFC), Color(0xFFE0E7FF)],
+            ),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          bottom: false,
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  _buildTopBar(context, textColor, mutedTextColor, primaryColor, isDarkMode),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.only(left: 20, right: 20, top: 4, bottom: 128),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildIdentityRow(asset, textColor, mutedTextColor, primaryColor, isDarkMode),
+                          const SizedBox(height: 14),
+                          _buildTagsRow(asset, textColor, mutedTextColor, primaryColor, isDarkMode),
+                          const SizedBox(height: 22),
+                          _buildPriceBlock(displayPrice, changeValue, changePercent, isPositive, textColor, mutedTextColor),
+                          const SizedBox(height: 18),
+                          _buildChartCard(displayPrice, isPositive, textColor, mutedTextColor, primaryColor),
+                          const SizedBox(height: 14),
+                          _buildRangeRow(textColor, mutedTextColor, primaryColor, isDarkMode),
+                          const SizedBox(height: 22),
+                          _buildStatsCard(open, high, low, prevClose, volume, mktCap, textColor, mutedTextColor),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            _buildBottomBar(asset),
-          ],
+                ],
+              ),
+              _buildBottomBar(asset, textColor, mutedTextColor, primaryColor, isDarkMode),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildTopBar(BuildContext context) {
+  Widget _buildTopBar(BuildContext context, Color? textColor, Color? mutedTextColor, Color primaryColor, bool isDarkMode) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _buildIconButton(Icons.arrow_back, () => Navigator.pop(context), _card, _ink),
+          _buildIconButton(Icons.arrow_back, () => Navigator.pop(context), textColor),
           Row(
             children: [
-              _buildIconButton(Icons.notifications_outlined, () {}, _card, _ink),
+              _buildIconButton(Icons.notifications_outlined, () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationsPage()));
+              }, textColor),
               const SizedBox(width: 8),
-              _buildIconButton(Icons.bookmark, () {}, _indigoSoft, _indigo),
+              _buildIconButton(Icons.bookmark, () {}, primaryColor, isSelected: true),
             ],
           ),
         ],
@@ -217,26 +226,19 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
     );
   }
 
-  Widget _buildIconButton(IconData icon, VoidCallback onTap, Color bgColor, Color iconColor) {
+  Widget _buildIconButton(IconData icon, VoidCallback onTap, Color? iconColor, {bool isSelected = false}) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: bgColor == _card ? _line : Colors.transparent),
-          boxShadow: bgColor == _card ? [
-            BoxShadow(color: _ink.withValues(alpha: 0.04), blurRadius: 2, offset: const Offset(0, 1)),
-          ] : null,
-        ),
+      child: GlassContainer(
+        padding: const EdgeInsets.all(8),
+        borderRadius: BorderRadius.circular(12),
+        color: isSelected ? iconColor?.withValues(alpha: 0.2) : null,
         child: Icon(icon, color: iconColor, size: 20),
       ),
     );
   }
 
-  Widget _buildIdentityRow(AssetModel asset) {
+  Widget _buildIdentityRow(AssetModel asset, Color? textColor, Color? mutedTextColor, Color primaryColor, bool isDarkMode) {
     final exchange = _fetchedStats?['exchange'] ?? 'MARKET';
     final type = _fetchedStats?['quoteType'] ?? 'Asset';
     
@@ -246,24 +248,20 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
           width: 46,
           height: 46,
           decoration: BoxDecoration(
-            color: _card,
+            color: isDarkMode ? Colors.white.withValues(alpha: 0.1) : primaryColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(13),
-            boxShadow: [
-              BoxShadow(color: _ink.withValues(alpha: 0.04), blurRadius: 2, offset: const Offset(0, 1)),
-              BoxShadow(color: _ink.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, 8)),
-            ],
           ),
           alignment: Alignment.center,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(13),
             child: Image.asset(
               'assets/icons/${asset.tickerSymbol}.png',
-              width: 46,
-              height: 46,
+              width: 32,
+              height: 32,
               errorBuilder: (context, error, stackTrace) => Text(
                 asset.tickerSymbol.isNotEmpty ? asset.tickerSymbol : asset.name,
                 style: TextStyle(
-                  color: _indigo,
+                  color: primaryColor,
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),
@@ -282,7 +280,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
                 style: TextStyle(
                   fontSize: 19,
                   fontWeight: FontWeight.bold,
-                  color: _ink,
+                  color: textColor,
                   letterSpacing: -0.01,
                 ),
               ),
@@ -291,7 +289,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
                 '$exchange · $type',
                 style: TextStyle(
                   fontSize: 13,
-                  color: _inkSoft,
+                  color: mutedTextColor,
                 ),
               ),
             ],
@@ -301,38 +299,35 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
     );
   }
 
-  Widget _buildTagsRow(AssetModel asset) {
+  Widget _buildTagsRow(AssetModel asset, Color? textColor, Color? mutedTextColor, Color primaryColor, bool isDarkMode) {
     return Wrap(
       spacing: 6,
       runSpacing: 6,
       children: [
-        if (asset.category.isNotEmpty) _buildTag(asset.category, false),
-        if (asset.tickerSymbol.isNotEmpty) _buildTag(asset.tickerSymbol, false),
-        _buildTag('Tracked Market', true),
+        if (asset.category.isNotEmpty) _buildTag(asset.category, false, mutedTextColor, primaryColor),
+        if (asset.tickerSymbol.isNotEmpty) _buildTag(asset.tickerSymbol, false, mutedTextColor, primaryColor),
+        _buildTag('Tracked Market', true, mutedTextColor, primaryColor),
       ],
     );
   }
 
-  Widget _buildTag(String text, bool isMarket) {
-    return Container(
+  Widget _buildTag(String text, bool isMarket, Color? mutedTextColor, Color primaryColor) {
+    return GlassContainer(
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
-      decoration: BoxDecoration(
-        color: isMarket ? _indigoSoft : _card,
-        borderRadius: BorderRadius.circular(100),
-        border: Border.all(color: isMarket ? Colors.transparent : _line),
-      ),
+      borderRadius: BorderRadius.circular(100),
+      color: isMarket ? primaryColor.withValues(alpha: 0.2) : null,
       child: Text(
         text,
         style: TextStyle(
           fontSize: 11.5,
           fontWeight: FontWeight.w600,
-          color: isMarket ? _indigo : _inkSoft,
+          color: isMarket ? primaryColor : mutedTextColor,
         ),
       ),
     );
   }
 
-  Widget _buildPriceBlock(double price, double changeValue, double changePercent, bool isPositive) {
+  Widget _buildPriceBlock(double price, double changeValue, double changePercent, bool isPositive, Color? textColor, Color? mutedTextColor) {
     final now = DateFormat('dd MMM yyyy, HH:mm').format(DateTime.now());
     
     return Column(
@@ -347,7 +342,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
               style: TextStyle(
                 fontSize: 38,
                 fontWeight: FontWeight.bold,
-                color: _ink,
+                color: textColor,
                 letterSpacing: -0.02,
               ),
             ),
@@ -357,7 +352,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: _inkFaint,
+                color: mutedTextColor,
               ),
             ),
           ],
@@ -368,21 +363,21 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
             Container(
               padding: const EdgeInsets.only(left: 7, right: 9, top: 4, bottom: 4),
               decoration: BoxDecoration(
-                color: isPositive ? _greenSoft : const Color(0xFFFBE4E4),
+                color: isPositive ? Colors.greenAccent.shade400.withValues(alpha: 0.2) : Colors.redAccent.shade400.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
                 children: [
                   Icon(
                     isPositive ? Icons.arrow_upward : Icons.arrow_downward,
-                    color: isPositive ? _green : _red,
+                    color: isPositive ? Colors.greenAccent.shade400 : Colors.redAccent.shade400,
                     size: 12,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     '${isPositive ? '+' : ''}${changeValue.toStringAsFixed(2)} (${changePercent.toStringAsFixed(2)}%)',
                     style: TextStyle(
-                      color: isPositive ? _green : _red,
+                      color: isPositive ? Colors.greenAccent.shade400 : Colors.redAccent.shade400,
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
                     ),
@@ -395,7 +390,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
               'today',
               style: TextStyle(
                 fontSize: 13,
-                color: _inkFaint,
+                color: mutedTextColor,
               ),
             ),
           ],
@@ -405,24 +400,17 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
           'Last updated $now (delayed 15 min)',
           style: TextStyle(
             fontSize: 12,
-            color: _inkFaint,
+            color: mutedTextColor,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildChartCard(double displayPrice, bool isPositive) {
-    return Container(
-      decoration: BoxDecoration(
-        color: _card,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(color: _ink.withValues(alpha: 0.04), blurRadius: 2, offset: const Offset(0, 1)),
-          BoxShadow(color: _ink.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, 8)),
-        ],
-      ),
+  Widget _buildChartCard(double displayPrice, bool isPositive, Color? textColor, Color? mutedTextColor, Color primaryColor) {
+    return GlassContainer(
       padding: const EdgeInsets.only(top: 18, left: 6, right: 6, bottom: 14),
+      borderRadius: BorderRadius.circular(22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -436,7 +424,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: _inkFaint,
+                    color: mutedTextColor,
                     letterSpacing: 0.03,
                   ),
                 ),
@@ -446,7 +434,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: isPositive ? _green : _red,
+                    color: isPositive ? Colors.greenAccent.shade400 : Colors.redAccent.shade400,
                   ),
                 ),
                 const SizedBox(height: 1),
@@ -454,7 +442,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
                   'Now · 15:00', // Simplified for demo
                   style: TextStyle(
                     fontSize: 11.5,
-                    color: _inkSoft,
+                    color: mutedTextColor,
                   ),
                 ),
               ],
@@ -472,7 +460,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
                 }
                 if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
                   return Center(
-                    child: Icon(Icons.show_chart, size: 60, color: isPositive ? _green : _red),
+                    child: Icon(Icons.show_chart, size: 60, color: isPositive ? Colors.greenAccent.shade400 : Colors.redAccent.shade400),
                   );
                 }
                 return _buildChart(snapshot.data!, isPositive);
@@ -485,11 +473,11 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildAxisText('10:24', false),
-                _buildAxisText('11:33', false),
-                _buildAxisText('12:42', false),
-                _buildAxisText('13:51', false),
-                _buildAxisText('15:00', true),
+                _buildAxisText('10:24', false, primaryColor, mutedTextColor),
+                _buildAxisText('11:33', false, primaryColor, mutedTextColor),
+                _buildAxisText('12:42', false, primaryColor, mutedTextColor),
+                _buildAxisText('13:51', false, primaryColor, mutedTextColor),
+                _buildAxisText('15:00', true, primaryColor, mutedTextColor),
               ],
             ),
           ),
@@ -498,31 +486,31 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
     );
   }
 
-  Widget _buildAxisText(String text, bool isNow) {
+  Widget _buildAxisText(String text, bool isNow, Color primaryColor, Color? mutedTextColor) {
     return Text(
       text,
       style: TextStyle(
         fontSize: 11,
         fontWeight: isNow ? FontWeight.w700 : FontWeight.w500,
-        color: isNow ? _indigo : _inkFaint,
+        color: isNow ? primaryColor : mutedTextColor,
       ),
     );
   }
 
-  Widget _buildRangeRow() {
+  Widget _buildRangeRow(Color? textColor, Color? mutedTextColor, Color primaryColor, bool isDarkMode) {
     return Row(
       children: [
-        _buildRangePill('1D'),
-        _buildRangePill('1W'),
-        _buildRangePill('1M'),
-        _buildRangePill('6M'),
-        _buildRangePill('YTD'),
-        _buildRangePill('1Y'),
+        _buildRangePill('1D', primaryColor, mutedTextColor),
+        _buildRangePill('1W', primaryColor, mutedTextColor),
+        _buildRangePill('1M', primaryColor, mutedTextColor),
+        _buildRangePill('6M', primaryColor, mutedTextColor),
+        _buildRangePill('YTD', primaryColor, mutedTextColor),
+        _buildRangePill('1Y', primaryColor, mutedTextColor),
       ],
     );
   }
 
-  Widget _buildRangePill(String text) {
+  Widget _buildRangePill(String text, Color primaryColor, Color? mutedTextColor) {
     final bool isActive = _selectedTimeframe == text;
     return Expanded(
       child: GestureDetector(
@@ -530,10 +518,10 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 9),
           decoration: BoxDecoration(
-            color: isActive ? _indigo : Colors.transparent,
+            color: isActive ? primaryColor : Colors.transparent,
             borderRadius: BorderRadius.circular(11),
             boxShadow: isActive ? [
-              BoxShadow(color: _indigo.withValues(alpha: 0.28), blurRadius: 14, offset: const Offset(0, 6)),
+              BoxShadow(color: primaryColor.withValues(alpha: 0.28), blurRadius: 14, offset: const Offset(0, 6)),
             ] : null,
           ),
           alignment: Alignment.center,
@@ -542,7 +530,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.bold,
-              color: isActive ? Colors.white : _inkSoft,
+              color: isActive ? Colors.white : mutedTextColor,
             ),
           ),
         ),
@@ -550,17 +538,10 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
     );
   }
 
-  Widget _buildStatsCard(num? open, num? high, num? low, num? prevClose, num? volume, num? mktCap) {
-    return Container(
-      decoration: BoxDecoration(
-        color: _card,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(color: _ink.withValues(alpha: 0.04), blurRadius: 2, offset: const Offset(0, 1)),
-          BoxShadow(color: _ink.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, 8)),
-        ],
-      ),
+  Widget _buildStatsCard(num? open, num? high, num? low, num? prevClose, num? volume, num? mktCap, Color? textColor, Color? mutedTextColor) {
+    return GlassContainer(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      borderRadius: BorderRadius.circular(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -569,24 +550,24 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: _inkFaint,
+              color: mutedTextColor,
               letterSpacing: 0.04,
             ),
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(child: _buildStatItem('Open', _formatNumber(open), null)),
-              Expanded(child: _buildStatItem('High', _formatNumber(high), _green)),
-              Expanded(child: _buildStatItem('Low', _formatNumber(low), _red)),
+              Expanded(child: _buildStatItem('Open', _formatNumber(open), null, textColor, mutedTextColor)),
+              Expanded(child: _buildStatItem('High', _formatNumber(high), Colors.greenAccent.shade400, textColor, mutedTextColor)),
+              Expanded(child: _buildStatItem('Low', _formatNumber(low), Colors.redAccent.shade400, textColor, mutedTextColor)),
             ],
           ),
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(child: _buildStatItem('Prev. close', _formatNumber(prevClose), null)),
-              Expanded(child: _buildStatItem('Volume', _formatNumber(volume), null)),
-              Expanded(child: _buildStatItem('Mkt cap', _formatNumber(mktCap), null)),
+              Expanded(child: _buildStatItem('Prev. close', _formatNumber(prevClose), null, textColor, mutedTextColor)),
+              Expanded(child: _buildStatItem('Volume', _formatNumber(volume), null, textColor, mutedTextColor)),
+              Expanded(child: _buildStatItem('Mkt cap', _formatNumber(mktCap), null, textColor, mutedTextColor)),
             ],
           ),
         ],
@@ -594,7 +575,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
     );
   }
 
-  Widget _buildStatItem(String label, String value, Color? color) {
+  Widget _buildStatItem(String label, String value, Color? color, Color? textColor, Color? mutedTextColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -602,7 +583,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
           label,
           style: TextStyle(
             fontSize: 11.5,
-            color: _inkFaint,
+            color: mutedTextColor,
           ),
         ),
         const SizedBox(height: 3),
@@ -611,14 +592,14 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
           style: TextStyle(
             fontSize: 14.5,
             fontWeight: FontWeight.bold,
-            color: color ?? _ink,
+            color: color ?? textColor,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildBottomBar(AssetModel asset) {
+  Widget _buildBottomBar(AssetModel asset, Color? textColor, Color? mutedTextColor, Color primaryColor, bool isDarkMode) {
     final state = _fetchedStats?['marketState'] ?? 'REGULAR';
     String stateLabel = 'Market Open';
     if (state == 'CLOSED') stateLabel = 'Market Closed';
@@ -629,94 +610,86 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
       bottom: 0,
       left: 0,
       right: 0,
-      child: ClipRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-          child: Container(
-            decoration: BoxDecoration(
-              color: _bg.withValues(alpha: 0.9),
-              border: const Border(top: BorderSide(color: _line)),
-            ),
-            padding: const EdgeInsets.only(left: 20, right: 20, top: 14, bottom: 32),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
+      child: GlassContainer(
+        padding: const EdgeInsets.only(left: 20, right: 20, top: 14, bottom: 32),
+        borderRadius: BorderRadius.zero,
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '${_fetchedStats?['exchange'] ?? 'Market'} session',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: mutedTextColor,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Row(
                     children: [
-                      Text(
-                        '${_fetchedStats?['exchange'] ?? 'Market'} session',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: _inkFaint,
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.amber,
+                          shape: BoxShape.circle,
                         ),
                       ),
-                      const SizedBox(height: 3),
-                      Row(
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              color: _amber,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            stateLabel,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: _ink,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 2),
+                      const SizedBox(width: 6),
                       Text(
-                        'Trades on ${_fetchedStats?['exchange'] ?? 'Exchange'}',
+                        stateLabel,
                         style: TextStyle(
-                          fontSize: 11.5,
-                          color: _inkSoft,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
                         ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(width: 14),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _indigo,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 6,
-                    shadowColor: _indigo.withValues(alpha: 0.5),
-                  ),
-                  onPressed: () {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (context) => AddEntrySheet(asset: asset),
-                    );
-                  },
-                  child: Text(
-                    'Invest',
+                  const SizedBox(height: 2),
+                  Text(
+                    'Trades on ${_fetchedStats?['exchange'] ?? 'Exchange'}',
                     style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 11.5,
+                      color: mutedTextColor,
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+            const SizedBox(width: 14),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                elevation: 6,
+                shadowColor: primaryColor.withValues(alpha: 0.5),
+              ),
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => AddEntrySheet(asset: asset),
+                );
+              },
+              child: const Text(
+                'Invest',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

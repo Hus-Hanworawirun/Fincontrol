@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'asset_event.dart';
 import 'asset_state.dart';
@@ -12,11 +13,9 @@ class AssetBloc extends Bloc<AssetEvent, AssetState> {
   Timer? _syncTimer;
 
   AssetBloc({
-    required AssetRepository assetRepository,
-    required MarketApiRepository marketApiRepository,
-  })  : _assetRepository = assetRepository,
-        _marketApiRepository = marketApiRepository,
-        super(AssetInitial()) {
+    required this._assetRepository,
+    required this._marketApiRepository,
+  })  : super(AssetInitial()) {
     on<LoadAssets>(_onLoadAssets);
     on<AddAsset>(_onAddAsset);
     on<SyncAssetPrices>(_onSyncAssetPrices);
@@ -81,7 +80,7 @@ class AssetBloc extends Bloc<AssetEvent, AssetState> {
       }
     } catch (e) {
       // Fail silently for background syncs to avoid disrupting the UI
-      print('Sync error: $e');
+      debugPrint('Sync error: $e');
     }
   }
 

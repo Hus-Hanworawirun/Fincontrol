@@ -1,6 +1,7 @@
 import 'package:fincontrol/view/wealth/created_portfolio.dart';
 import 'package:fincontrol/view/wealth/invest_page.dart';
 import 'package:flutter/material.dart';
+import '../widgets/glass_container.dart';
 
 class CreatePortfolioPage extends StatefulWidget {
   const CreatePortfolioPage({super.key});
@@ -33,18 +34,21 @@ class _CreatePortfolioPageState extends State<CreatePortfolioPage> {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color;
+    final mutedTextColor = Theme.of(context).textTheme.bodySmall?.color;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF8E84FF),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: textColor),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Create New Portfolio',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        title: Text(
+          'New Goal',
+          style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
@@ -53,21 +57,19 @@ class _CreatePortfolioPageState extends State<CreatePortfolioPage> {
           const SizedBox(height: 16),
           Center(
             child: GestureDetector(
-              onTap: () => _showIconPicker(context),
+              onTap: () => _showIconPicker(context, textColor, primaryColor),
               child: Stack(
                 children: [
-                  Container(
+                  GlassContainer(
                     width: 96,
                     height: 96,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF9B41FF),
-                      shape: BoxShape.circle,
-                    ),
+                    borderRadius: BorderRadius.circular(48),
+                    color: primaryColor.withValues(alpha: 0.2),
                     child: Center(
                       child: Icon(
                         _selectedIcon,
-                        size: 48,
-                        color: Colors.greenAccent,
+                        size: 40,
+                        color: primaryColor,
                       ),
                     ),
                   ),
@@ -75,10 +77,11 @@ class _CreatePortfolioPageState extends State<CreatePortfolioPage> {
                     bottom: 0,
                     right: 0,
                     child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF1C1C1E),
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: primaryColor,
                         shape: BoxShape.circle,
+                        border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 2),
                       ),
                       child: const Icon(
                         Icons.edit,
@@ -93,236 +96,174 @@ class _CreatePortfolioPageState extends State<CreatePortfolioPage> {
           ),
           const SizedBox(height: 32),
           Expanded(
-            child: Container(
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(32),
-                  topRight: Radius.circular(32),
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              children: [
+                _buildInputField(
+                  controller: _nameController,
+                  hint: 'Goal Name',
+                  textColor: textColor,
+                  mutedTextColor: mutedTextColor,
                 ),
-              ),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Padding(
+                  padding: const EdgeInsets.only(top: 8, left: 16, bottom: 24),
+                  child: Text(
+                    '${_nameController.text.length}/25 characters',
+                    style: TextStyle(color: mutedTextColor, fontSize: 12),
+                  ),
+                ),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: _suggestions.map((suggestion) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _nameController.text = suggestion;
+                            });
+                          },
+                          child: GlassContainer(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            borderRadius: BorderRadius.circular(20),
+                            child: Text(
+                              suggestion,
+                              style: TextStyle(color: textColor, fontWeight: FontWeight.w600, fontSize: 13),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                Row(
                   children: [
-                    TextField(
-                      controller: _nameController,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: const InputDecoration(
-                        hintText: 'Create Portfolio Name',
-                        hintStyle: TextStyle(color: Colors.grey, fontSize: 18),
-                        enabledBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(color: Color(0xFF333333)),
+                    GestureDetector(
+                      onTap: () => setState(() => _setGoal = !_setGoal),
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _setGoal ? primaryColor : Colors.transparent,
+                          border: Border.all(
+                            color: _setGoal ? primaryColor : (mutedTextColor ?? Colors.grey),
+                            width: 2,
+                          ),
                         ),
-                        focusedBorder: UnderlineInputBorder(
-                          borderSide: BorderSide(color: Colors.white),
-                        ),
+                        child: _setGoal
+                            ? const Icon(Icons.check, size: 16, color: Colors.white)
+                            : null,
                       ),
-                      onChanged: (value) => setState(() {}),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(width: 12),
                     Text(
-                      '${_nameController.text.length}/25 characters.',
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                      'Set Target Amount',
+                      style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.w600),
                     ),
-                    const SizedBox(height: 16),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: _suggestions.map((suggestion) {
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child: OutlinedButton(
-                              style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: Colors.grey),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _nameController.text = suggestion;
-                                });
-                              },
-                              child: Text(
-                                suggestion,
-                                style: const TextStyle(color: Colors.grey),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () => setState(() => _setGoal = !_setGoal),
-                          child: Container(
-                            width: 24,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.grey,
-                                width: 1.5,
-                              ),
-                            ),
-                            child: _setGoal
-                                ? const Icon(
-                                    Icons.check,
-                                    size: 16,
-                                    color: Colors.white,
-                                  )
-                                : null,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        const Text(
-                          'Set Goal',
-                          style: TextStyle(color: Colors.black, fontSize: 16),
-                        ),
-                      ],
-                    ),
-                    if (_setGoal) ...[
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _goalController,
-                        keyboardType: TextInputType.number,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: const InputDecoration(
-                          hintText: 'Enter Goal Amount',
-                          hintStyle: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 18,
-                          ),
-                          prefixIcon: Icon(
-                            Icons.attach_money,
-                            color: Colors.grey,
-                          ),
-                          enabledBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xFF333333)),
-                          ),
-                          focusedBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(color: Colors.white),
-                          ),
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 32),
-                    Row(
-                      children: const [
-                        Icon(
-                          Icons.description_outlined,
-                          color: Colors.grey,
-                          size: 16,
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          'Note',
-                          style: TextStyle(color: Colors.grey, fontSize: 14),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      height: 80,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: const Color(0xFF333333)),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: TextField(
-                        controller: _noteController,
-                        style: const TextStyle(color: Colors.white),
-                        maxLines: null,
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.all(12),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    const Text(
-                      'Add Assets to This Portfolio',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Each stock or asset supports assignment to one portfolio. Adding an asset to a new portfolio removes it from its previous portfolio.',
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 14,
-                        height: 1.5,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF4F3FF0),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: ListTile(
-                        title: const Text(
-                          'Select Assets',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        trailing: const Icon(
-                          Icons.arrow_forward,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const InvestPage(),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF4F3FF0),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: ((context) => const CreatedPortfolio()),
-                            ),
-                          );
-                        },
-                        child: const Text(
-                          'Create',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
                   ],
                 ),
-              ),
+                if (_setGoal) ...[
+                  const SizedBox(height: 16),
+                  _buildInputField(
+                    controller: _goalController,
+                    hint: 'Enter Target Amount',
+                    prefixIcon: Icons.attach_money,
+                    isNumber: true,
+                    textColor: textColor,
+                    mutedTextColor: mutedTextColor,
+                  ),
+                ],
+                const SizedBox(height: 32),
+                Row(
+                  children: [
+                    Icon(Icons.description_outlined, color: mutedTextColor, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Note',
+                      style: TextStyle(color: mutedTextColor, fontSize: 15, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                GlassContainer(
+                  height: 100,
+                  padding: EdgeInsets.zero,
+                  borderRadius: BorderRadius.circular(16),
+                  child: TextField(
+                    controller: _noteController,
+                    style: TextStyle(color: textColor, fontSize: 15),
+                    maxLines: null,
+                    decoration: InputDecoration(
+                      hintText: 'Add an optional note...',
+                      hintStyle: TextStyle(color: mutedTextColor?.withValues(alpha: 0.5), fontSize: 15),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.all(16),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 40),
+                Text(
+                  'Assign Assets',
+                  style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Adding an asset to a new goal removes it from its previous assignment.',
+                  style: TextStyle(color: mutedTextColor, fontSize: 13, height: 1.5),
+                ),
+                const SizedBox(height: 16),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const InvestPage()),
+                    );
+                  },
+                  child: GlassContainer(
+                    borderRadius: BorderRadius.circular(16),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                    color: primaryColor.withValues(alpha: 0.1),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Select Assets',
+                          style: TextStyle(color: primaryColor, fontWeight: FontWeight.w700, fontSize: 16),
+                        ),
+                        Icon(Icons.arrow_forward_ios, color: primaryColor, size: 16),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 40),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: ((context) => const CreatedPortfolio()),
+                      ),
+                    );
+                  },
+                  child: const Text(
+                    'Create Goal',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(height: 40),
+              ],
             ),
           ),
         ],
@@ -330,36 +271,58 @@ class _CreatePortfolioPageState extends State<CreatePortfolioPage> {
     );
   }
 
-  void _showIconPicker(BuildContext context) {
+  Widget _buildInputField({
+    required TextEditingController controller,
+    required String hint,
+    IconData? prefixIcon,
+    bool isNumber = false,
+    required Color? textColor,
+    required Color? mutedTextColor,
+  }) {
+    return GlassContainer(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      borderRadius: BorderRadius.circular(16),
+      child: TextField(
+        controller: controller,
+        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.w600),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(color: mutedTextColor?.withValues(alpha: 0.5), fontSize: 16, fontWeight: FontWeight.normal),
+          prefixIcon: prefixIcon != null ? Icon(prefixIcon, color: mutedTextColor) : null,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(vertical: 16),
+        ),
+        onChanged: (value) => setState(() {}),
+      ),
+    );
+  }
+
+  void _showIconPicker(BuildContext context, Color? textColor, Color primaryColor) {
     final icons = [
-      Icons.monetization_on,
-      Icons.house,
-      Icons.directions_car,
-      Icons.savings,
-      Icons.account_balance,
-      Icons.trending_up,
-      Icons.shopping_bag,
-      Icons.flight,
-      Icons.school,
-      Icons.favorite,
+      Icons.monetization_on, Icons.house, Icons.directions_car, Icons.savings,
+      Icons.account_balance, Icons.trending_up, Icons.shopping_bag, Icons.flight,
+      Icons.school, Icons.favorite,
     ];
 
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (BuildContext context) {
-        return Padding(
-          padding: const EdgeInsets.all(24.0),
+        return GlassContainer(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          padding: const EdgeInsets.all(32.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Select Icon',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
+              Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2))),
               const SizedBox(height: 24),
+              Text(
+                'Select Icon',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor),
+              ),
+              const SizedBox(height: 32),
               GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -370,6 +333,7 @@ class _CreatePortfolioPageState extends State<CreatePortfolioPage> {
                 ),
                 itemCount: icons.length,
                 itemBuilder: (context, index) {
+                  final isSelected = _selectedIcon == icons[index];
                   return GestureDetector(
                     onTap: () {
                       setState(() {
@@ -379,22 +343,22 @@ class _CreatePortfolioPageState extends State<CreatePortfolioPage> {
                     },
                     child: Container(
                       decoration: BoxDecoration(
-                        color: _selectedIcon == icons[index] 
-                            ? const Color(0xFF4F3FF0).withValues(alpha: 0.2) 
-                            : Colors.grey.shade100,
+                        color: isSelected ? primaryColor.withValues(alpha: 0.2) : Colors.transparent,
                         shape: BoxShape.circle,
+                        border: Border.all(
+                           color: isSelected ? primaryColor : (textColor?.withValues(alpha: 0.1) ?? Colors.grey),
+                           width: isSelected ? 2 : 1,
+                        ),
                       ),
                       child: Icon(
                         icons[index],
-                        color: _selectedIcon == icons[index] 
-                            ? const Color(0xFF4F3FF0) 
-                            : Colors.black54,
+                        color: isSelected ? primaryColor : textColor?.withValues(alpha: 0.6),
                       ),
                     ),
                   );
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 32),
             ],
           ),
         );

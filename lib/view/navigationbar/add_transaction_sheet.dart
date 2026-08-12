@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/app_categories.dart';
 import '../../core/gemini_service.dart';
+import '../widgets/glass_container.dart';
 
 enum TransactionType { income, expense }
 
@@ -22,9 +23,6 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
 
   List<String> _suggestions = [];
   bool _loadingSuggestions  = false;
-
-  static const _purple  = Color(0xFF4F3FF0);
-  static const _fieldBg = Color(0xFFF4F2F8);
 
   @override
   void dispose() {
@@ -60,7 +58,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     });
   }
 
-  Future<void> _pickDate() async {
+  Future<void> _pickDate(Color primaryColor) async {
     final picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
@@ -68,7 +66,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       lastDate: DateTime(2101),
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
-          colorScheme: const ColorScheme.light(primary: _purple),
+          colorScheme: const ColorScheme.light().copyWith(primary: primaryColor),
         ),
         child: child!,
       ),
@@ -84,21 +82,24 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
   @override
   Widget build(BuildContext context) {
     final isIncome    = _type == TransactionType.income;
-    final accentColor = isIncome ? Colors.green : Colors.red;
+    final accentColor = isIncome ? Colors.greenAccent.shade400 : Colors.redAccent.shade400;
 
-    return Container(
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color;
+    final mutedTextColor = Theme.of(context).textTheme.bodySmall?.color;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final fieldBg = isDarkMode ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05);
+
+    return GlassContainer(
       padding: EdgeInsets.only(
         left: 24,
         right: 24,
         top: 16,
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft:  Radius.circular(24),
-          topRight: Radius.circular(24),
-        ),
+      borderRadius: const BorderRadius.only(
+        topLeft:  Radius.circular(24),
+        topRight: Radius.circular(24),
       ),
       child: SingleChildScrollView(
         child: Column(
@@ -110,7 +111,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
               child: Container(
                 width: 40, height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
+                  color: isDarkMode ? Colors.white38 : Colors.grey.shade300,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -121,10 +122,10 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Add Transaction',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                Text('Add Transaction',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor)),
                 IconButton(
-                  icon: const Icon(Icons.close, color: Colors.grey),
+                  icon: Icon(Icons.close, color: mutedTextColor),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -135,20 +136,20 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             Container(
               height: 44,
               decoration: BoxDecoration(
-                color: _fieldBg,
+                color: fieldBg,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
                   _TypeTab(
-                    label: 'Income', selected: isIncome, color: Colors.green,
+                    label: 'Income', selected: isIncome, color: Colors.greenAccent.shade400,
                     onTap: () => setState(() {
                       _type = TransactionType.income;
                       _suggestions = []; _selectedCategory = null;
                     }),
                   ),
                   _TypeTab(
-                    label: 'Expense', selected: !isIncome, color: Colors.red,
+                    label: 'Expense', selected: !isIncome, color: Colors.redAccent.shade400,
                     onTap: () => setState(() {
                       _type = TransactionType.expense;
                       _suggestions = []; _selectedCategory = null;
@@ -160,13 +161,14 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             const SizedBox(height: 20),
 
             // Note (first)
-            _Label('Note'),
+            _Label('Note', mutedTextColor),
             const SizedBox(height: 8),
             TextField(
               controller: _noteController,
               textInputAction: TextInputAction.done,
               onSubmitted: (_) => _onSuggest(),
-              decoration: _inputDeco('e.g. Lunch, Salary...'),
+              style: TextStyle(color: textColor),
+              decoration: _inputDeco('e.g. Lunch, Salary...', primaryColor, fieldBg, mutedTextColor),
             ),
             const SizedBox(height: 8),
 
@@ -180,7 +182,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                         child: CircularProgressIndicator(strokeWidth: 2))
                     : const Icon(Icons.auto_awesome, size: 16),
                 label: const Text('Suggest category'),
-                style: TextButton.styleFrom(foregroundColor: _purple),
+                style: TextButton.styleFrom(foregroundColor: primaryColor),
               ),
             ),
 
@@ -197,15 +199,15 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
                       duration: const Duration(milliseconds: 150),
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
-                        color: sel ? _purple : _fieldBg,
+                        color: sel ? primaryColor : fieldBg,
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: sel ? _purple : Colors.grey.shade300),
+                        border: Border.all(color: sel ? primaryColor : (isDarkMode ? Colors.white24 : Colors.grey.shade300)),
                       ),
                       child: Text(s,
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: sel ? Colors.white : Colors.black87,
+                          color: sel ? Colors.white : textColor,
                         ),
                       ),
                     ),
@@ -216,38 +218,40 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             ],
 
             // Category dropdown
-            _Label('Category'),
+            _Label('Category', mutedTextColor),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
-                color: _fieldBg,
+                color: fieldBg,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   isExpanded: true,
                   value: _selectedCategory,
-                  hint: const Text('Select category',
-                    style: TextStyle(color: Colors.grey, fontSize: 15)),
+                  dropdownColor: isDarkMode ? const Color(0xFF1E1B4B) : Colors.white,
+                  hint: Text('Select category',
+                    style: TextStyle(color: mutedTextColor, fontSize: 15)),
                   items: AppCategories.forType(isIncome).map((c) =>
-                    DropdownMenuItem(value: c.label, child: Text(c.label))
+                    DropdownMenuItem(value: c.label, child: Text(c.label, style: TextStyle(color: textColor)))
                   ).toList(),
                   onChanged: (v) => setState(() => _selectedCategory = v),
+                  iconEnabledColor: textColor,
                 ),
               ),
             ),
             const SizedBox(height: 16),
 
             // Amount (after note)
-            _Label('Amount'),
+            _Label('Amount', mutedTextColor),
             const SizedBox(height: 8),
             TextField(
               controller: _amountController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              decoration: _inputDeco('0.00',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: textColor),
+              decoration: _inputDeco('0.00', primaryColor, fieldBg, mutedTextColor,
                 prefix: Text('\$  ',
                   style: TextStyle(
                     fontSize: 24, fontWeight: FontWeight.bold, color: accentColor,
@@ -258,23 +262,23 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             const SizedBox(height: 16),
 
             // Date
-            _Label('When did it happen?'),
+            _Label('When did it happen?', mutedTextColor),
             const SizedBox(height: 8),
             GestureDetector(
-              onTap: _pickDate,
+              onTap: () => _pickDate(primaryColor),
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: _fieldBg,
+                  color: fieldBg,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.calendar_today, color: Colors.grey),
+                    Icon(Icons.calendar_today, color: mutedTextColor),
                     const SizedBox(width: 12),
                     Text(
                       '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                      style: const TextStyle(fontSize: 16),
+                      style: TextStyle(fontSize: 16, color: textColor),
                     ),
                   ],
                 ),
@@ -288,7 +292,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
               height: 56,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _purple,
+                  backgroundColor: primaryColor,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -308,9 +312,9 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     );
   }
 
-  InputDecoration _inputDeco(String hint, {Widget? prefix}) => InputDecoration(
+  InputDecoration _inputDeco(String hint, Color primaryColor, Color fieldBg, Color? mutedTextColor, {Widget? prefix}) => InputDecoration(
     hintText: hint,
-    hintStyle: const TextStyle(color: Colors.grey),
+    hintStyle: TextStyle(color: mutedTextColor),
     prefix: prefix,
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
@@ -318,9 +322,9 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
       borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(16),
-      borderSide: const BorderSide(color: _purple, width: 1.5)),
+      borderSide: BorderSide(color: primaryColor, width: 1.5)),
     filled: true,
-    fillColor: _fieldBg,
+    fillColor: fieldBg,
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
   );
 }
@@ -348,7 +352,7 @@ class _TypeTab extends StatelessWidget {
           child: Text(label,
             style: TextStyle(
               fontSize: 14, fontWeight: FontWeight.w700,
-              color: selected ? color : Colors.grey,
+              color: selected ? color : Theme.of(context).textTheme.bodySmall?.color,
             ),
           ),
         ),
@@ -359,13 +363,14 @@ class _TypeTab extends StatelessWidget {
 
 class _Label extends StatelessWidget {
   final String text;
-  const _Label(this.text);
+  final Color? mutedTextColor;
+  const _Label(this.text, this.mutedTextColor);
 
   @override
   Widget build(BuildContext context) {
     return Text(text,
-      style: const TextStyle(
-        color: Colors.grey, fontSize: 14, fontWeight: FontWeight.bold,
+      style: TextStyle(
+        color: mutedTextColor, fontSize: 14, fontWeight: FontWeight.bold,
       ),
     );
   }

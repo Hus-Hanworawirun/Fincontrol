@@ -2,6 +2,7 @@ import 'package:fincontrol/view/wealth/asset_detail_page.dart';
 import 'package:flutter/material.dart';
 import '../../data/models/asset_model.dart';
 import '../../data/repositories/market_api_repository.dart';
+import '../widgets/glass_container.dart';
 
 class InvestPage extends StatefulWidget {
   const InvestPage({super.key});
@@ -48,77 +49,95 @@ class _InvestPageState extends State<InvestPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F2F8),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text(
-          'Invest',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: false,
-        automaticallyImplyLeading: true,
-        iconTheme: const IconThemeData(color: Colors.black),
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color;
+    final mutedTextColor = Theme.of(context).textTheme.bodySmall?.color;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: isDarkMode 
+          ? const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF0F172A), Color(0xFF1E1B4B)],
+            )
+          : const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFF8FAFC), Color(0xFFE0E7FF)],
+            ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE2DFE7),
+      child: Scaffold(
+        backgroundColor: Colors.transparent, 
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: Text(
+            'Invest',
+            style: TextStyle(
+              color: textColor,
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          centerTitle: false,
+          automaticallyImplyLeading: true,
+          iconTheme: IconThemeData(color: textColor),
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: GlassContainer(
+                      height: 50,
+                      padding: EdgeInsets.zero,
                       borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Search assets',
-                        border: InputBorder.none,
-                        prefixIcon: Icon(Icons.search, color: Colors.grey),
-                        contentPadding: EdgeInsets.symmetric(vertical: 15),
+                      child: TextField(
+                        style: TextStyle(color: textColor, fontSize: 16),
+                        decoration: InputDecoration(
+                          hintText: 'Search assets',
+                          hintStyle: TextStyle(color: mutedTextColor),
+                          border: InputBorder.none,
+                          prefixIcon: Icon(Icons.search, color: mutedTextColor),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 15),
+                        ),
                       ),
                     ),
                   ),
-                ),
                 const SizedBox(width: 12),
                 GestureDetector(
-                  onTap: _showSortSheet,
-                  child: Container(
+                  onTap: () => _showSortSheet(textColor, primaryColor),
+                  child: GlassContainer(
                     width: 50,
                     height: 50,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE2DFE7),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Icon(Icons.tune, color: Colors.black),
+                    padding: EdgeInsets.zero,
+                    borderRadius: BorderRadius.circular(16),
+                    child: Icon(Icons.tune, color: textColor),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             Row(
               children: [
-                _buildCategoryButton('Stocks'),
+                _buildCategoryButton('Stocks', primaryColor, textColor, mutedTextColor),
                 const SizedBox(width: 12),
-                _buildCategoryButton('Crypto'),
+                _buildCategoryButton('Crypto', primaryColor, textColor, mutedTextColor),
                 const SizedBox(width: 12),
-                _buildCategoryButton('ETFs'),
+                _buildCategoryButton('ETFs', primaryColor, textColor, mutedTextColor),
               ],
             ),
             const SizedBox(height: 32),
-            const Text(
+            Text(
               'Spotlight',
               style: TextStyle(
-                color: Colors.black,
+                color: textColor,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -166,26 +185,15 @@ class _InvestPageState extends State<InvestPage> {
                           ),
                         );
                       },
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withAlpha(12),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
+                      child: GlassContainer(
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                        borderRadius: BorderRadius.circular(20),
                         child: Row(
                           children: [
                             Container(
                               padding: const EdgeInsets.all(12),
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFF4F2F8),
+                              decoration: BoxDecoration(
+                                color: isDarkMode ? Colors.white.withValues(alpha: 0.1) : primaryColor.withValues(alpha: 0.1),
                                 shape: BoxShape.circle,
                               ),
                               child: Image.asset(
@@ -193,7 +201,7 @@ class _InvestPageState extends State<InvestPage> {
                                 width: 24,
                                 height: 24,
                                 errorBuilder: (context, error, stackTrace) =>
-                                    const Icon(Icons.show_chart, color: Color(0xFF4F3FF0)),
+                                    Icon(Icons.show_chart, color: primaryColor),
                               ),
                             ),
                             const SizedBox(width: 16),
@@ -203,12 +211,12 @@ class _InvestPageState extends State<InvestPage> {
                                 children: [
                                   Text(
                                     asset['ticker'] as String,
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: textColor),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     asset['name'] as String,
-                                    style: const TextStyle(color: Colors.grey, fontSize: 13),
+                                    style: TextStyle(color: mutedTextColor, fontSize: 13),
                                   ),
                                 ],
                               ),
@@ -218,13 +226,13 @@ class _InvestPageState extends State<InvestPage> {
                               children: [
                                 Text(
                                   '\$${(asset['price'] as double).toStringAsFixed(2)}',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: textColor),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   '${isPositive ? '+' : ''}${asset['change']}%',
                                   style: TextStyle(
-                                    color: isPositive ? Colors.green : Colors.red,
+                                    color: isPositive ? Colors.greenAccent.shade400 : Colors.redAccent.shade400,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 13,
                                   ),
@@ -242,29 +250,41 @@ class _InvestPageState extends State<InvestPage> {
           ],
         ),
       ),
+      ),
     );
   }
 
-  void _showSortSheet() {
+  void _showSortSheet(Color? textColor, Color primaryColor) {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(24),
+        return GlassContainer(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+          padding: const EdgeInsets.all(32.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Sort By', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              Center(
+                child: Container(
+                  width: 40, 
+                  height: 4, 
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withValues(alpha: 0.3), 
+                    borderRadius: BorderRadius.circular(2)
+                  )
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text('Sort By', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor)),
               const SizedBox(height: 16),
-              _buildSortOption('Default'),
-              _buildSortOption('Top Gainers'),
-              _buildSortOption('Top Losers'),
-              _buildSortOption('A-Z'),
-              const SizedBox(height: 16),
+              _buildSortOption('Default', textColor, primaryColor),
+              _buildSortOption('Top Gainers', textColor, primaryColor),
+              _buildSortOption('Top Losers', textColor, primaryColor),
+              _buildSortOption('A-Z', textColor, primaryColor),
+              const SizedBox(height: 24),
             ],
           ),
         );
@@ -272,10 +292,19 @@ class _InvestPageState extends State<InvestPage> {
     );
   }
 
-  Widget _buildSortOption(String title) {
+  Widget _buildSortOption(String title, Color? textColor, Color primaryColor) {
+    final isSelected = _selectedSort == title;
     return ListTile(
-      title: Text(title, style: TextStyle(fontWeight: _selectedSort == title ? FontWeight.bold : FontWeight.normal)),
-      trailing: _selectedSort == title ? const Icon(Icons.check, color: Color(0xFF4F3FF0)) : null,
+      contentPadding: EdgeInsets.zero,
+      title: Text(
+        title, 
+        style: TextStyle(
+          color: isSelected ? primaryColor : textColor,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+          fontSize: 16,
+        )
+      ),
+      trailing: isSelected ? Icon(Icons.check, color: primaryColor) : null,
       onTap: () {
         setState(() {
           _selectedSort = title;
@@ -285,7 +314,7 @@ class _InvestPageState extends State<InvestPage> {
     );
   }
 
-  Widget _buildCategoryButton(String title) {
+  Widget _buildCategoryButton(String title, Color primaryColor, Color? textColor, Color? mutedTextColor) {
     final isSelected = _selectedCategory == title;
     return Expanded(
       child: GestureDetector(
@@ -298,18 +327,19 @@ class _InvestPageState extends State<InvestPage> {
             }
           });
         },
-        child: Container(
-          height: 36,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF4F3FF0) : const Color(0xFFE2DFE7),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            title, 
-            style: TextStyle(
-              color: isSelected ? Colors.white : Colors.black, 
-              fontWeight: FontWeight.bold,
+        child: GlassContainer(
+          height: 44,
+          padding: EdgeInsets.zero,
+          borderRadius: BorderRadius.circular(22),
+          color: isSelected ? primaryColor.withValues(alpha: 0.3) : null,
+          child: Center(
+            child: Text(
+              title, 
+              style: TextStyle(
+                color: isSelected ? primaryColor : mutedTextColor, 
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                fontSize: 14,
+              ),
             ),
           ),
         ),
