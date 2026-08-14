@@ -1,9 +1,10 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'app_categories.dart';
 
 class GeminiService {
-  static const _apiKey = ''; 
+  static String get _apiKey => dotenv.env['GEMINI_API_KEY'] ?? ''; 
 
   static final _model = GenerativeModel(
     model: 'gemini-3.5-flash-lite',
@@ -58,6 +59,20 @@ Example output: ["Food & Dining", "Grocery", "Other Expense"]
     } catch (e) {
       debugPrint('[Gemini error]: $e');
       return [];
+    }
+  }
+
+  static Future<String?> generateFinancialInsight(String last10Transactions) async {
+    if (last10Transactions.trim().isEmpty) return null;
+
+    final prompt = 'Here are my recent transactions:\n$last10Transactions\nGive me one short financial insight in 1-2 sentences. Make it encouraging and helpful. DO NOT wrap it in quotes. DO NOT output bold markdown text, just keep it plain simple string.';
+    
+    try {
+      final response = await _model.generateContent([Content.text(prompt)]);
+      return response.text?.replaceAll('\n', ' ').trim();
+    } catch (e) {
+      debugPrint('[Gemini error]: $e');
+      return null;
     }
   }
 }

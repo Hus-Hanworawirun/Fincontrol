@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fincontrol/bloc/transaction/transaction_bloc.dart';
 import 'package:fincontrol/bloc/transaction/transaction_state.dart';
+import 'package:fincontrol/data/models/transaction_model.dart';
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
-
+import 'package:fincontrol/core/gemini_service.dart';
+import 'package:fincontrol/data/repositories/auth_repository.dart';
 class HomePage extends StatelessWidget {
   final VoidCallback? onSeeAllActivity;
   final VoidCallback? onGoToWealth;
@@ -49,28 +51,53 @@ class HomePage extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context, Color? textColor, Color primaryColor, Color cardColor) {
+    final hour = DateTime.now().hour;
+    String greeting = 'Good Morning,';
+    if (hour >= 12 && hour < 17) {
+      greeting = 'Good Afternoon,';
+    } else if (hour >= 17) {
+      greeting = 'Good Evening,';
+    }
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Expanded(
-          child: Row(
-            children: [
-              CircleAvatar(
-                backgroundColor: primaryColor.withValues(alpha: 0.1),
-                radius: 24,
-                child: Icon(Icons.person, color: primaryColor),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Good Morning,', style: TextStyle(fontSize: 13, color: textColor?.withValues(alpha: 0.6))),
-                    Text('The One Who Wait', style: TextStyle(fontSize: 20, color: textColor, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis, maxLines: 1),
-                  ],
-                ),
-              ),
-            ],
+          child: FutureBuilder<Map<String, dynamic>?>(
+            future: AuthRepository().getUser(),
+            builder: (context, snapshot) {
+              String finalName = 'User';
+              String? photoUrl;
+              
+              if (snapshot.hasData && snapshot.data != null) {
+                finalName = snapshot.data!['name'] ?? 'User';
+                photoUrl = snapshot.data!['photo_url'];
+                if (photoUrl != null && !photoUrl.startsWith('http')) {
+                  photoUrl = '${AuthRepository().baseUrl}$photoUrl';
+                }
+              }
+              
+              return Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: primaryColor.withValues(alpha: 0.1),
+                    radius: 24,
+                    backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+                    child: photoUrl == null ? Icon(Icons.person, color: primaryColor) : null,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(greeting, style: TextStyle(fontSize: 13, color: textColor?.withValues(alpha: 0.6))),
+                        Text(finalName, style: TextStyle(fontSize: 20, color: textColor, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis, maxLines: 1),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            }
           ),
         ),
         Row(
@@ -114,17 +141,57 @@ class HomePage extends StatelessWidget {
         double currentMonthIncome = 0;
         double currentMonthExpense = 0;
         double totalBalance = 0; 
+        List<FlSpot> sparklineSpots = const [
+          FlSpot(0, 3), FlSpot(1, 4), FlSpot(2, 3.5), FlSpot(3, 6), FlSpot(4, 5), FlSpot(5, 8), FlSpot(6, 7),
+        ];
+        double minSpotY = 0;
+        double maxSpotY = 10;
 
         if (state is TransactionLoaded) {
           final now = DateTime.now();
           for (var t in state.transactions) {
-            if (t.type == 'Income') totalBalance += t.amount;
-            if (t.type == 'Expense') totalBalance -= t.amount;
+            final typeStr = t.type.toLowerCase();
+            final amt = t.amount.abs();
+            if (typeStr == 'income') totalBalance += amt;
+            if (typeStr == 'expense') totalBalance -= amt;
 
             if (t.date.year == now.year && t.date.month == now.month) {
-              if (t.type == 'Income') currentMonthIncome += t.amount;
-              if (t.type == 'Expense') currentMonthExpense += t.amount;
+              if (typeStr == 'income') currentMonthIncome += amt;
+              if (typeStr == 'expense') currentMonthExpense += amt;
             }
+          }
+          
+          Map<int, double> dailyNet = {}; 
+          for (var t in state.transactions) {
+            final diff = now.difference(t.date).inDays;
+            if (diff >= 0 && diff < 7) {
+              final amt = t.amount.abs();
+              dailyNet[diff] = (dailyNet[diff] ?? 0) + (t.type.toLowerCase() == 'income' ? amt : -amt);
+            }
+          }
+          
+          List<FlSpot> dynamicSpots = [];
+          double runningBalance = totalBalance;
+          double currentMin = totalBalance;
+          double currentMax = totalBalance;
+          
+          dynamicSpots.add(FlSpot(6, runningBalance));
+          
+          for (int i = 0; i < 6; i++) {
+            runningBalance -= (dailyNet[i] ?? 0);
+            if (runningBalance < currentMin) currentMin = runningBalance;
+            if (runningBalance > currentMax) currentMax = runningBalance;
+            dynamicSpots.add(FlSpot((5 - i).toDouble(), runningBalance));
+          }
+          sparklineSpots = dynamicSpots.reversed.toList();
+          
+          if (currentMin == currentMax) {
+            minSpotY = currentMin - 10;
+            maxSpotY = currentMax + 10;
+          } else {
+            final padding = (currentMax - currentMin) * 0.1;
+            minSpotY = currentMin - padding;
+            maxSpotY = currentMax + padding;
           }
         }
 
@@ -165,13 +232,11 @@ class HomePage extends StatelessWidget {
                         borderData: FlBorderData(show: false),
                         minX: 0,
                         maxX: 6,
-                        minY: 0,
-                        maxY: 10,
+                        minY: minSpotY,
+                        maxY: maxSpotY,
                         lineBarsData: [
                           LineChartBarData(
-                            spots: const [
-                              FlSpot(0, 3), FlSpot(1, 4), FlSpot(2, 3.5), FlSpot(3, 6), FlSpot(4, 5), FlSpot(5, 8), FlSpot(6, 7),
-                            ],
+                            spots: sparklineSpots,
                             isCurved: true,
                             color: primaryColor,
                             barWidth: 3,
@@ -250,33 +315,7 @@ class HomePage extends StatelessWidget {
   }
 
   Widget _buildAiInsightCard(BuildContext context, Color? textColor, Color primaryColor, Color cardColor) {
-    return Container(
-      decoration: BoxDecoration(
-        color: primaryColor.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: primaryColor.withValues(alpha: 0.2), width: 1),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.lightbulb_outline, color: primaryColor, size: 24),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Insight', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: textColor)),
-                const SizedBox(height: 4),
-                Text('You spent 15% less on Food this week compared to last week. Great job staying on budget.', 
-                  style: TextStyle(fontSize: 13, color: textColor?.withValues(alpha: 0.8), height: 1.4),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    return AiInsightCard(textColor: textColor, primaryColor: primaryColor);
   }
 
   Widget _buildQuickActions(BuildContext context, Color? textColor, Color? mutedTextColor, Color primaryColor, Color cardColor) {
@@ -379,7 +418,8 @@ class HomePage extends StatelessWidget {
                 
                 return Column(
                   children: recent.map((t) {
-                    bool isIncome = t.type == 'Income';
+                    bool isIncome = t.type.toLowerCase() == 'income';
+                    final amt = t.amount.abs();
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 20.0),
                       child: Row(
@@ -403,7 +443,7 @@ class HomePage extends StatelessWidget {
                               ],
                             ),
                           ),
-                          Text('${isIncome ? "+" : "-"}\$${t.amount.toStringAsFixed(2)}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
+                          Text('${isIncome ? "+" : "-"}\$${amt.toStringAsFixed(2)}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
                         ],
                       ),
                     );
@@ -429,5 +469,102 @@ class HomePage extends StatelessWidget {
       case 'Salary': return Icons.payments_outlined;
       default: return Icons.category_outlined;
     }
+  }
+}
+
+class AiInsightCard extends StatefulWidget {
+  final Color? textColor;
+  final Color primaryColor;
+  
+  const AiInsightCard({super.key, this.textColor, required this.primaryColor});
+
+  @override
+  State<AiInsightCard> createState() => _AiInsightCardState();
+}
+
+class _AiInsightCardState extends State<AiInsightCard> {
+  String? _insight;
+  bool _isLoading = false;
+
+  Future<void> _fetchInsight(List<TransactionModel> transactions) async {
+    if (_insight != null || _isLoading) return;
+    
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      final recent = List<TransactionModel>.from(transactions)
+        ..sort((a, b) => b.date.compareTo(a.date));
+      final last10 = recent.take(10).map((t) => '${t.date.toIso8601String().substring(0, 10)}: ${t.type} \$${t.amount} for ${t.category} (${t.note})').join('\n');
+      
+      final insight = await GeminiService.generateFinancialInsight(last10);
+      
+      if (mounted) {
+        setState(() {
+          _insight = insight ?? 'Could not load insight at this time.';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _insight = 'Could not load insight at this time.';
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<TransactionBloc, TransactionState>(
+      builder: (context, state) {
+        if (state is TransactionLoaded && state.transactions.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _fetchInsight(state.transactions);
+          });
+        }
+        
+        return Container(
+          decoration: BoxDecoration(
+            color: widget.primaryColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: widget.primaryColor.withValues(alpha: 0.2), width: 1),
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.lightbulb_outline, color: widget.primaryColor, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Insight', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: widget.textColor)),
+                    const SizedBox(height: 4),
+                    if (_isLoading)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4.0),
+                        child: LinearProgressIndicator(
+                          backgroundColor: widget.primaryColor.withValues(alpha: 0.2),
+                          color: widget.primaryColor,
+                          minHeight: 2,
+                        ),
+                      )
+                    else
+                      Text(
+                        _insight ?? 'Not enough data for insights yet.', 
+                        style: TextStyle(fontSize: 13, color: widget.textColor?.withValues(alpha: 0.8), height: 1.4),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+    );
   }
 }

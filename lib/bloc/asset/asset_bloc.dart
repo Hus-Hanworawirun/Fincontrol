@@ -18,6 +18,8 @@ class AssetBloc extends Bloc<AssetEvent, AssetState> {
   })  : super(AssetInitial()) {
     on<LoadAssets>(_onLoadAssets);
     on<AddAsset>(_onAddAsset);
+    on<UpdateAsset>(_onUpdateAsset);
+    on<DeleteAsset>(_onDeleteAsset);
     on<SyncAssetPrices>(_onSyncAssetPrices);
     on<AssetsUpdated>((event, emit) => emit(AssetLoaded(event.assets)));
     on<AssetFailed>((event, emit) => emit(AssetError(event.error)));
@@ -54,6 +56,25 @@ class AssetBloc extends Bloc<AssetEvent, AssetState> {
   void _onAddAsset(AddAsset event, Emitter<AssetState> emit) async {
     try {
       await _assetRepository.addAsset(event.asset);
+      add(const LoadAssets());
+    } catch (e) {
+      if (!isClosed) emit(AssetError(e.toString()));
+    }
+  }
+
+  void _onUpdateAsset(UpdateAsset event, Emitter<AssetState> emit) async {
+    try {
+      await _assetRepository.updateAsset(event.asset);
+      add(const LoadAssets());
+    } catch (e) {
+      if (!isClosed) emit(AssetError(e.toString()));
+    }
+  }
+
+  void _onDeleteAsset(DeleteAsset event, Emitter<AssetState> emit) async {
+    try {
+      await _assetRepository.deleteAsset(event.id);
+      add(const LoadAssets());
     } catch (e) {
       if (!isClosed) emit(AssetError(e.toString()));
     }
@@ -63,6 +84,7 @@ class AssetBloc extends Bloc<AssetEvent, AssetState> {
     try {
       final currentState = state;
       if (currentState is AssetLoaded) {
+        bool changed = false;
         for (final asset in currentState.assets) {
           if (asset.tickerSymbol.isEmpty) continue;
 
@@ -74,8 +96,13 @@ class AssetBloc extends Bloc<AssetEvent, AssetState> {
           }
 
           if (price > 0 && price != asset.currentPrice) {
-            await _assetRepository.updateAssetCurrentPrice(asset.id, price);
+            final updated = asset.copyWith(currentPrice: price);
+            await _assetRepository.updateAsset(updated);
+            changed = true;
           }
+        }
+        if (changed) {
+          add(const LoadAssets());
         }
       }
     } catch (e) {

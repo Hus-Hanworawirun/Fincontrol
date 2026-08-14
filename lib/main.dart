@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'firebase_options.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'bloc/auth/auth_bloc.dart';
 import 'bloc/transaction/transaction_bloc.dart';
 import 'bloc/transaction/transaction_event.dart';
@@ -14,6 +12,7 @@ import 'bloc/asset/asset_bloc.dart';
 import 'bloc/asset/asset_event.dart';
 import 'data/repositories/asset_repository.dart';
 import 'data/repositories/market_api_repository.dart';
+import 'data/repositories/auth_repository.dart';
 import 'view/navigationbar/bottom_navigation_bar.dart';
 import 'view/splash/splash_page.dart';
 import 'core/theme/app_theme.dart';
@@ -21,23 +20,28 @@ import 'bloc/theme/theme_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  runApp(const MyApp());
+  await dotenv.load(fileName: ".env");
+  
+  final authRepository = AuthRepository();
+  final isLoggedIn = await authRepository.isLoggedIn();
+
+  runApp(MyApp(authRepository: authRepository, isLoggedIn: isLoggedIn));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final AuthRepository authRepository;
+  final bool isLoggedIn;
+
+  const MyApp({super.key, required this.authRepository, required this.isLoggedIn});
 
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (context) => ThemeCubit()),
-        BlocProvider(create: (context) => AuthBloc()),
-        BlocProvider(create: (context) => TransactionBloc(transactionRepository: TransactionRepository())..add(LoadTransactions(FirebaseAuth.instance.currentUser?.uid ?? ''))),
-        BlocProvider(create: (context) => PortfolioBloc(portfolioRepository: PortfolioRepository())..add(LoadPortfolios(FirebaseAuth.instance.currentUser?.uid ?? ''))),
+        BlocProvider(create: (context) => AuthBloc(authRepository: authRepository)),
+        BlocProvider(create: (context) => TransactionBloc(transactionRepository: TransactionRepository())..add(LoadTransactions(''))),
+        BlocProvider(create: (context) => PortfolioBloc(portfolioRepository: PortfolioRepository())..add(LoadPortfolios(''))),
         BlocProvider(create: (context) => AssetBloc(assetRepository: AssetRepository(), marketApiRepository: MarketApiRepository())..add(const LoadAssets())),
       ],
       child: BlocBuilder<ThemeCubit, ThemeMode>(
@@ -47,34 +51,10 @@ class MyApp extends StatelessWidget {
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: themeMode,
-            home: const AuthWrapper(),
+            home: isLoggedIn ? const MainNavigationShell() : const GetStartedView(),
           );
         },
       ),
-    );
-  }
-}
-
-class AuthWrapper extends StatelessWidget {
-  const AuthWrapper({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-        // If a user is logged in, show the MainNavigationShell
-        if (snapshot.hasData) {
-          return const MainNavigationShell();
-        }
-        // Otherwise, show the splash/GetStartedView
-        return const GetStartedView();
-      },
     );
   }
 }

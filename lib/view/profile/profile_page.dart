@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/auth/auth_event.dart';
 import '../../bloc/theme/theme_cubit.dart';
+import '../../data/repositories/auth_repository.dart';
 import '../widgets/glass_container.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -13,16 +15,91 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  final AuthRepository _authRepo = AuthRepository();
   bool _biometricEnabled = true;
-  bool _aiInsightsEnabled = true;
-  bool _smartNotificationsEnabled = false;
   String _selectedCurrency = 'USD';
+  bool _isUploadingProfilePic = false;
+  
+  Map<String, dynamic>? _user;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+    setState(() => _isLoading = true);
+    try {
+      final user = await _authRepo.getUser();
+      setState(() {
+        _user = user;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    if (_isUploadingProfilePic || _user == null) return;
+
+    setState(() {
+      _isUploadingProfilePic = true;
+    });
+
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 400,
+        maxHeight: 400,
+        imageQuality: 80,
+      );
+
+      if (pickedFile != null) {
+        await _authRepo.uploadAvatar(pickedFile.path);
+        // Reload user to get new avatar URL
+        await _loadUser();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to upload image: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploadingProfilePic = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final textColor = Theme.of(context).textTheme.bodyLarge?.color;
     final mutedTextColor = Theme.of(context).textTheme.bodySmall?.color;
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    String displayName = _user?['name'] ?? 'User Name';
+    String email = _user?['email'] ?? 'No email provided';
+    String uid = _user?['id']?.toString() ?? 'Unknown';
+    if (uid.length > 8) uid = uid.substring(0, 8);
+    
+    String? photoUrl = _user?['photo_url'];
+    if (photoUrl != null && !photoUrl.startsWith('http')) {
+      photoUrl = '${_authRepo.baseUrl}$photoUrl';
+    }
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -62,17 +139,37 @@ class _ProfilePageState extends State<ProfilePage> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        child: const Icon(
-                          Icons.person,
-                          size: 50,
-                          color: Colors.white,
+                      GestureDetector(
+                        onTap: _isUploadingProfilePic ? null : _pickAndUploadImage,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Theme.of(context).colorScheme.primary,
+                                image: photoUrl != null
+                                    ? DecorationImage(
+                                        image: NetworkImage(photoUrl),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : null,
+                              ),
+                              child: photoUrl == null
+                                  ? const Icon(
+                                      Icons.person,
+                                      size: 50,
+                                      color: Colors.white,
+                                    )
+                                  : null,
+                            ),
+                            if (_isUploadingProfilePic)
+                              const CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -90,7 +187,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'The One Who Wait',
+                              displayName,
                               textAlign: TextAlign.right,
                               style: TextStyle(
                                 fontSize: 18,
@@ -107,9 +204,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   const SizedBox(height: 24),
                   Divider(color: textColor?.withValues(alpha: 0.1), thickness: 1.5),
                   const SizedBox(height: 24),
-                  _buildDetailRow(context, 'Username', 'husvainglory@hotmail.com'),
+                  _buildDetailRow(context, 'Username', email),
                   const SizedBox(height: 16),
-                  _buildDetailRow(context, 'Account No.', '18019712'),
+                  _buildDetailRow(context, 'Account No.', uid),
                 ],
               ),
             ),
@@ -129,7 +226,9 @@ class _ProfilePageState extends State<ProfilePage> {
                     mutedTextColor: mutedTextColor,
                     trailing: Switch(
                       value: _biometricEnabled,
-                      onChanged: (val) => setState(() => _biometricEnabled = val),
+                      onChanged: (val) {
+                        setState(() => _biometricEnabled = val);
+                      },
                       activeThumbColor: Theme.of(context).colorScheme.primary,
                       activeTrackColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
                     ),
@@ -143,7 +242,11 @@ class _ProfilePageState extends State<ProfilePage> {
                     textColor: textColor,
                     mutedTextColor: mutedTextColor,
                     trailing: Icon(Icons.chevron_right, color: mutedTextColor),
-                    onTap: () {},
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Change Password coming soon!')),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -196,7 +299,11 @@ class _ProfilePageState extends State<ProfilePage> {
                         Text('🇹🇭 ไทย', style: TextStyle(color: mutedTextColor)),
                       ],
                     ),
-                    onTap: () {},
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Language selection coming soon!')),
+                      );
+                    },
                   ),
                   _buildDivider(textColor),
                   _buildListTile(
@@ -220,45 +327,6 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
 
             const SizedBox(height: 24),
-            _buildSectionHeader('AI & Automation', textColor),
-            GlassContainer(
-              padding: EdgeInsets.zero,
-              child: Column(
-                children: [
-                  _buildListTile(
-                    icon: Icons.auto_awesome,
-                    iconColor: Colors.purpleAccent,
-                    title: 'Gemini AI Insights',
-                    subtitle: 'Allow AI to analyze spending habits',
-                    textColor: textColor,
-                    mutedTextColor: mutedTextColor,
-                    trailing: Switch(
-                      value: _aiInsightsEnabled,
-                      onChanged: (val) => setState(() => _aiInsightsEnabled = val),
-                      activeThumbColor: Theme.of(context).colorScheme.primary,
-                      activeTrackColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
-                    ),
-                  ),
-                  _buildDivider(textColor),
-                  _buildListTile(
-                    icon: Icons.notifications_active_outlined,
-                    iconColor: Colors.redAccent,
-                    title: 'Smart Notifications',
-                    subtitle: 'Receive automatic budget alerts',
-                    textColor: textColor,
-                    mutedTextColor: mutedTextColor,
-                    trailing: Switch(
-                      value: _smartNotificationsEnabled,
-                      onChanged: (val) => setState(() => _smartNotificationsEnabled = val),
-                      activeThumbColor: Theme.of(context).colorScheme.primary,
-                      activeTrackColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
             _buildSectionHeader('Support', textColor),
             GlassContainer(
               padding: EdgeInsets.zero,
@@ -272,7 +340,11 @@ class _ProfilePageState extends State<ProfilePage> {
                     textColor: textColor,
                     mutedTextColor: mutedTextColor,
                     trailing: Icon(Icons.chevron_right, color: mutedTextColor),
-                    onTap: () {},
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Help Center coming soon!')),
+                      );
+                    },
                   ),
                   _buildDivider(textColor),
                   _buildListTile(
@@ -283,7 +355,11 @@ class _ProfilePageState extends State<ProfilePage> {
                     textColor: textColor,
                     mutedTextColor: mutedTextColor,
                     trailing: Icon(Icons.chevron_right, color: mutedTextColor),
-                    onTap: () {},
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Terms & Privacy coming soon!')),
+                      );
+                    },
                   ),
                 ],
               ),

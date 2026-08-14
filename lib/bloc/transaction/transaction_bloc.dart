@@ -38,6 +38,7 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
   void _onAddTransaction(AddTransaction event, Emitter<TransactionState> emit) async {
     try {
       await _transactionRepository.addTransaction(event.transaction);
+      add(const LoadTransactions(''));
     } catch (e) {
       if (!isClosed) emit(TransactionError(e.toString()));
     }
@@ -46,6 +47,7 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
   void _onUpdateTransaction(UpdateTransaction event, Emitter<TransactionState> emit) async {
     try {
       await _transactionRepository.updateTransaction(event.transaction);
+      add(const LoadTransactions(''));
     } catch (e) {
       if (!isClosed) emit(TransactionError(e.toString()));
     }
@@ -54,6 +56,7 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
   void _onDeleteTransaction(DeleteTransaction event, Emitter<TransactionState> emit) async {
     try {
       await _transactionRepository.deleteTransaction(event.id);
+      add(const LoadTransactions(''));
     } catch (e) {
       if (!isClosed) emit(TransactionError(e.toString()));
     }

@@ -5,7 +5,8 @@ import '../../data/repositories/market_api_repository.dart';
 import '../widgets/glass_container.dart';
 
 class InvestPage extends StatefulWidget {
-  const InvestPage({super.key});
+  final String? portfolioId;
+  const InvestPage({super.key, this.portfolioId});
 
   @override
   State<InvestPage> createState() => _InvestPageState();
@@ -15,13 +16,54 @@ class _InvestPageState extends State<InvestPage> {
   final MarketApiRepository _api = MarketApiRepository();
   String _selectedCategory = '';
   String _selectedSort = 'Default';
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   final List<Map<String, dynamic>> _mockAssets = [
-    {'name': 'Apple Inc.', 'ticker': 'AAPL', 'price': 189.30, 'change': 1.25, 'icon': Icons.apple, 'category': 'Stocks'},
-    {'name': 'Tesla', 'ticker': 'TSLA', 'price': 248.50, 'change': -2.34, 'icon': Icons.electric_car, 'category': 'Stocks'},
-    {'name': 'Bitcoin', 'ticker': 'BTC-USD', 'price': 42150.00, 'change': 5.67, 'icon': Icons.currency_bitcoin, 'category': 'Crypto'},
-    {'name': 'Amazon', 'ticker': 'AMZN', 'price': 145.20, 'change': 0.89, 'icon': Icons.shopping_cart, 'category': 'Stocks'},
-    {'name': 'S&P 500 ETF', 'ticker': 'VOO', 'price': 410.80, 'change': 0.45, 'icon': Icons.trending_up, 'category': 'ETFs'},
+    // Stocks
+    {'name': 'Apple Inc.', 'ticker': 'AAPL', 'price': 189.30, 'change': 1.25, 'category': 'Stocks'},
+    {'name': 'Microsoft Corp.', 'ticker': 'MSFT', 'price': 378.85, 'change': 0.75, 'category': 'Stocks'},
+    {'name': 'Alphabet Inc.', 'ticker': 'GOOGL', 'price': 142.65, 'change': -0.45, 'category': 'Stocks'},
+    {'name': 'Amazon.com', 'ticker': 'AMZN', 'price': 145.20, 'change': 0.89, 'category': 'Stocks'},
+    {'name': 'NVIDIA Corp.', 'ticker': 'NVDA', 'price': 481.11, 'change': 2.30, 'category': 'Stocks'},
+    {'name': 'Meta Platforms', 'ticker': 'META', 'price': 334.92, 'change': 1.10, 'category': 'Stocks'},
+    {'name': 'Tesla Inc.', 'ticker': 'TSLA', 'price': 248.50, 'change': -2.34, 'category': 'Stocks'},
+    
+    // Crypto
+    {'name': 'Bitcoin', 'ticker': 'BTC-USD', 'price': 42150.00, 'change': 5.67, 'category': 'Crypto'},
+    {'name': 'Ethereum', 'ticker': 'ETH-USD', 'price': 2250.40, 'change': 3.12, 'category': 'Crypto'},
+    {'name': 'Solana', 'ticker': 'SOL-USD', 'price': 72.30, 'change': 8.45, 'category': 'Crypto'},
+    {'name': 'Binance Coin', 'ticker': 'BNB-USD', 'price': 245.80, 'change': 1.20, 'category': 'Crypto'},
+    {'name': 'Ripple', 'ticker': 'XRP-USD', 'price': 0.62, 'change': -1.40, 'category': 'Crypto'},
+    {'name': 'Cardano', 'ticker': 'ADA-USD', 'price': 0.45, 'change': 2.10, 'category': 'Crypto'},
+    {'name': 'Dogecoin', 'ticker': 'DOGE-USD', 'price': 0.09, 'change': 4.50, 'category': 'Crypto'},
+
+    // ETFs
+    {'name': 'Vanguard S&P 500 ETF', 'ticker': 'VOO', 'price': 410.80, 'change': 0.45, 'category': 'ETFs'},
+    {'name': 'Invesco QQQ Trust', 'ticker': 'QQQ', 'price': 390.25, 'change': 0.85, 'category': 'ETFs'},
+    {'name': 'SPDR S&P 500 ETF', 'ticker': 'SPY', 'price': 447.18, 'change': 0.42, 'category': 'ETFs'},
+    {'name': 'iShares Core S&P 500', 'ticker': 'IVV', 'price': 449.30, 'change': 0.44, 'category': 'ETFs'},
+    {'name': 'Vanguard Total Stock', 'ticker': 'VTI', 'price': 225.10, 'change': 0.51, 'category': 'ETFs'},
+    {'name': 'SPDR Dow Jones', 'ticker': 'DIA', 'price': 362.40, 'change': 0.20, 'category': 'ETFs'},
+    {'name': 'ARK Innovation ETF', 'ticker': 'ARKK', 'price': 48.90, 'change': -1.25, 'category': 'ETFs'},
+
+    // Mutual Funds
+    {'name': 'Vanguard 500 Index Fund', 'ticker': 'VFIAX', 'price': 485.20, 'change': 0.50, 'category': 'Mutual Funds'},
+    {'name': 'Fidelity Contrafund', 'ticker': 'FCNTX', 'price': 15.34, 'change': -0.12, 'category': 'Mutual Funds'},
+    {'name': 'Fidelity 500 Index', 'ticker': 'FXAIX', 'price': 168.45, 'change': 0.48, 'category': 'Mutual Funds'},
+    {'name': 'Schwab S&P 500', 'ticker': 'SWPPX', 'price': 72.15, 'change': 0.49, 'category': 'Mutual Funds'},
+    {'name': 'Vanguard Total Stock', 'ticker': 'VTSAX', 'price': 112.30, 'change': 0.52, 'category': 'Mutual Funds'},
+    {'name': 'Vanguard Wellington', 'ticker': 'VWENX', 'price': 74.20, 'change': 0.15, 'category': 'Mutual Funds'},
+    {'name': 'T. Rowe Price Capital', 'ticker': 'PRWCX', 'price': 34.90, 'change': 0.22, 'category': 'Mutual Funds'},
+
+    // Thai Stocks
+    {'name': 'PTT Public Company', 'ticker': 'PTT.BK', 'price': 35.50, 'change': 0.25, 'category': 'Thai Stocks'},
+    {'name': 'Airports of Thailand', 'ticker': 'AOT.BK', 'price': 65.25, 'change': -0.50, 'category': 'Thai Stocks'},
+    {'name': 'Advanced Info Service', 'ticker': 'ADVANC.BK', 'price': 210.00, 'change': 1.10, 'category': 'Thai Stocks'},
+    {'name': 'SCB X Public Company', 'ticker': 'SCB.BK', 'price': 105.50, 'change': 0.45, 'category': 'Thai Stocks'},
+    {'name': 'CP All Public Company', 'ticker': 'CPALL.BK', 'price': 58.75, 'change': 0.80, 'category': 'Thai Stocks'},
+    {'name': 'Bangkok Dusit Medical', 'ticker': 'BDMS.BK', 'price': 27.50, 'change': 0.30, 'category': 'Thai Stocks'},
+    {'name': 'Kasikornbank', 'ticker': 'KBANK.BK', 'price': 130.50, 'change': -0.20, 'category': 'Thai Stocks'},
   ];
 
   @override
@@ -99,6 +141,8 @@ class _InvestPageState extends State<InvestPage> {
                       padding: EdgeInsets.zero,
                       borderRadius: BorderRadius.circular(16),
                       child: TextField(
+                        controller: _searchController,
+                        onChanged: (val) => setState(() => _searchQuery = val),
                         style: TextStyle(color: textColor, fontSize: 16),
                         decoration: InputDecoration(
                           hintText: 'Search assets',
@@ -124,14 +168,21 @@ class _InvestPageState extends State<InvestPage> {
               ],
             ),
             const SizedBox(height: 24),
-            Row(
-              children: [
-                _buildCategoryButton('Stocks', primaryColor, textColor, mutedTextColor),
-                const SizedBox(width: 12),
-                _buildCategoryButton('Crypto', primaryColor, textColor, mutedTextColor),
-                const SizedBox(width: 12),
-                _buildCategoryButton('ETFs', primaryColor, textColor, mutedTextColor),
-              ],
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildCategoryButton('Stocks', primaryColor, textColor, mutedTextColor),
+                  const SizedBox(width: 12),
+                  _buildCategoryButton('Crypto', primaryColor, textColor, mutedTextColor),
+                  const SizedBox(width: 12),
+                  _buildCategoryButton('ETFs', primaryColor, textColor, mutedTextColor),
+                  const SizedBox(width: 12),
+                  _buildCategoryButton('Mutual Funds', primaryColor, textColor, mutedTextColor),
+                  const SizedBox(width: 12),
+                  _buildCategoryButton('Thai Stocks', primaryColor, textColor, mutedTextColor),
+                ],
+              ),
             ),
             const SizedBox(height: 32),
             Text(
@@ -145,9 +196,17 @@ class _InvestPageState extends State<InvestPage> {
             const SizedBox(height: 16),
             Builder(
               builder: (context) {
-                final filteredAssets = _selectedCategory.isEmpty 
+                List<Map<String, dynamic>> filteredAssets = _selectedCategory.isEmpty 
                     ? List<Map<String, dynamic>>.from(_mockAssets) 
                     : _mockAssets.where((a) => a['category'] == _selectedCategory).toList();
+                
+                if (_searchQuery.isNotEmpty) {
+                  final query = _searchQuery.toLowerCase();
+                  filteredAssets = filteredAssets.where((a) => 
+                    (a['name'] as String).toLowerCase().contains(query) ||
+                    (a['ticker'] as String).toLowerCase().contains(query)
+                  ).toList();
+                }
                 
                 if (_selectedSort == 'Top Gainers') {
                   filteredAssets.sort((a, b) => (b['change'] as double).compareTo(a['change'] as double));
@@ -181,7 +240,7 @@ class _InvestPageState extends State<InvestPage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => AssetDetailPage(asset: assetModel),
+                            builder: (context) => AssetDetailPage(asset: assetModel, portfolioId: widget.portfolioId),
                           ),
                         );
                       },
@@ -200,8 +259,19 @@ class _InvestPageState extends State<InvestPage> {
                                 'assets/icons/${asset['ticker']}.png',
                                 width: 24,
                                 height: 24,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    Icon(Icons.show_chart, color: primaryColor),
+                                errorBuilder: (context, error, stackTrace) {
+                                  final String ticker = asset['ticker'] as String;
+                                  return Center(
+                                    child: Text(
+                                      ticker.isNotEmpty ? ticker.substring(0, 1) : '?',
+                                      style: TextStyle(
+                                        color: primaryColor,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
                             ),
                             const SizedBox(width: 16),
@@ -316,30 +386,28 @@ class _InvestPageState extends State<InvestPage> {
 
   Widget _buildCategoryButton(String title, Color primaryColor, Color? textColor, Color? mutedTextColor) {
     final isSelected = _selectedCategory == title;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            if (_selectedCategory == title) {
-              _selectedCategory = '';
-            } else {
-              _selectedCategory = title;
-            }
-          });
-        },
-        child: GlassContainer(
-          height: 44,
-          padding: EdgeInsets.zero,
-          borderRadius: BorderRadius.circular(22),
-          color: isSelected ? primaryColor.withValues(alpha: 0.3) : null,
-          child: Center(
-            child: Text(
-              title, 
-              style: TextStyle(
-                color: isSelected ? primaryColor : mutedTextColor, 
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                fontSize: 14,
-              ),
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          if (_selectedCategory == title) {
+            _selectedCategory = '';
+          } else {
+            _selectedCategory = title;
+          }
+        });
+      },
+      child: GlassContainer(
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        borderRadius: BorderRadius.circular(22),
+        color: isSelected ? primaryColor.withValues(alpha: 0.3) : null,
+        child: Center(
+          child: Text(
+            title, 
+            style: TextStyle(
+              color: isSelected ? primaryColor : mutedTextColor, 
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+              fontSize: 14,
             ),
           ),
         ),

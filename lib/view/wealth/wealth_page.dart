@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fincontrol/bloc/asset/asset_bloc.dart';
 import 'package:fincontrol/bloc/asset/asset_state.dart';
+import 'package:fincontrol/bloc/portfolio/portfolio_bloc.dart';
+import 'package:fincontrol/bloc/portfolio/portfolio_state.dart';
+import 'package:fincontrol/view/wealth/create_new_portfolio.dart';
 import '../widgets/glass_container.dart';
 import 'invest_page.dart';
 import 'created_portfolio.dart';
@@ -14,30 +17,7 @@ class WealthPage extends StatefulWidget {
 }
 
 class _WealthPageState extends State<WealthPage> {
-  // Mock data for Financial Goals
-  final List<Map<String, dynamic>> _mockGoals = [
-    {
-      'title': 'Emergency Fund',
-      'icon': Icons.security,
-      'color': Colors.blueAccent,
-      'current': 5000.0,
-      'target': 10000.0,
-    },
-    {
-      'title': 'House Down Payment',
-      'icon': Icons.home,
-      'color': Colors.greenAccent,
-      'current': 15000.0,
-      'target': 80000.0,
-    },
-    {
-      'title': 'Dream Vacation',
-      'icon': Icons.flight_takeoff,
-      'color': Colors.purpleAccent,
-      'current': 2000.0,
-      'target': 5000.0,
-    },
-  ];
+  // Removed _mockGoals
 
   @override
   Widget build(BuildContext context) {
@@ -107,11 +87,24 @@ class _WealthPageState extends State<WealthPage> {
     return BlocBuilder<AssetBloc, AssetState>(
       builder: (context, state) {
         double totalAssets = 0;
+        double totalCost = 0;
         if (state is AssetLoaded) {
           for (var asset in state.assets) {
             totalAssets += (asset.totalQuantity * asset.currentPrice);
+            totalCost += (asset.totalQuantity * asset.averageBuyPrice);
           }
         }
+        
+        double pctChange = 0.0;
+        if (totalCost > 0) {
+            pctChange = ((totalAssets - totalCost) / totalCost) * 100;
+        }
+        
+        final isPositive = pctChange >= 0;
+        final sign = isPositive ? '+' : '';
+        final badgeColor = isPositive ? Colors.green : Colors.red;
+        final badgeIcon = isPositive ? Icons.trending_up : Icons.trending_down;
+        final badgeBgColor = isPositive ? Colors.greenAccent.withValues(alpha: 0.2) : Colors.redAccent.withValues(alpha: 0.2);
 
         return GlassContainer(
           padding: const EdgeInsets.all(24),
@@ -128,17 +121,17 @@ class _WealthPageState extends State<WealthPage> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.greenAccent.withValues(alpha: 0.2),
+                      color: badgeBgColor,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.trending_up, color: Colors.green, size: 16),
-                        SizedBox(width: 4),
+                        Icon(badgeIcon, color: badgeColor, size: 16),
+                        const SizedBox(width: 4),
                         Text(
-                          '+5.2%',
-                          style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 13),
+                          '$sign${pctChange.toStringAsFixed(1)}%',
+                          style: TextStyle(color: badgeColor, fontWeight: FontWeight.bold, fontSize: 13),
                         ),
                       ],
                     ),
@@ -176,7 +169,7 @@ class _WealthPageState extends State<WealthPage> {
                       children: [
                         Text('Liabilities', style: TextStyle(color: mutedTextColor, fontSize: 13)),
                         const SizedBox(height: 4),
-                        Text('\$0.00', style: TextStyle(color: Colors.redAccent.shade400, fontWeight: FontWeight.bold, fontSize: 18)),
+                        Text('N/A', style: TextStyle(color: mutedTextColor, fontWeight: FontWeight.bold, fontSize: 18)),
                       ],
                     ),
                   ),
@@ -190,57 +183,95 @@ class _WealthPageState extends State<WealthPage> {
   }
 
   Widget _buildGoalsSection(BuildContext context, Color? textColor, Color? mutedTextColor) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return BlocBuilder<PortfolioBloc, PortfolioState>(
+      builder: (context, state) {
+        List<dynamic> goals = [];
+        if (state is PortfolioLoaded) {
+          goals = state.portfolios;
+        }
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Financial Goals',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: textColor,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Financial Goals',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: textColor),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const CreatePortfolioPage()));
+                  },
+                  child: Text(
+                    'Add Goal',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
+                  ),
+                ),
+              ],
             ),
-            TextButton(
-              onPressed: () {},
-              child: Text(
-                'Add Goal',
-                style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(height: 12),
+            if (goals.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                child: Center(
+                  child: Text("No goals yet. Create one!", style: TextStyle(color: mutedTextColor)),
+                ),
+              )
+            else
+              SizedBox(
+                height: 180,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: goals.length,
+                  separatorBuilder: (context, index) => const SizedBox(width: 16),
+                  itemBuilder: (context, index) {
+                    final goal = goals[index];
+                    return BlocBuilder<AssetBloc, AssetState>(
+                      builder: (context, assetState) {
+                        double currentAmount = 0.0;
+                        if (assetState is AssetLoaded) {
+                           for (var asset in assetState.assets) {
+                             if (asset.portfolioId == goal.id) {
+                               currentAmount += (asset.totalQuantity * asset.currentPrice);
+                             }
+                           }
+                        }
+                        
+                        double target = goal.targetGoal ?? 1.0;
+                        if (target == 0) target = 1.0;
+                        double progress = (currentAmount / target).clamp(0.0, 1.0);
+                        
+                        return _buildGoalCard(context, goal, currentAmount, target, progress, textColor, mutedTextColor);
+                      }
+                    );
+                  },
+                ),
               ),
-            ),
           ],
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          height: 180,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: _mockGoals.length,
-            separatorBuilder: (context, index) => const SizedBox(width: 16),
-            itemBuilder: (context, index) {
-              final goal = _mockGoals[index];
-              final double progress = goal['current'] / goal['target'];
-              return _buildGoalCard(context, goal, progress, textColor, mutedTextColor);
-            },
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 
-  Widget _buildGoalCard(BuildContext context, Map<String, dynamic> goal, double progress, Color? textColor, Color? mutedTextColor) {
+  Widget _buildGoalCard(BuildContext context, dynamic goal, double currentAmount, double targetAmount, double progress, Color? textColor, Color? mutedTextColor) {
+    final color = Theme.of(context).colorScheme.primary; 
+    // ignore: non_const_argument_for_const_parameter
+    final iconData = IconData(goal.icon as int, fontFamily: 'MaterialIcons');
+    
     return GestureDetector(
       onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (context) => const CreatedPortfolio()));
+        Navigator.push(context, MaterialPageRoute(builder: (context) => CreatedPortfolio(
+          portfolio: goal,
+          currentAmount: currentAmount,
+        )));
       },
       child: SizedBox(
         width: 240,
         child: GlassContainer(
           padding: const EdgeInsets.all(20),
-        child: Column(
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -249,15 +280,15 @@ class _WealthPageState extends State<WealthPage> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: goal['color'].withValues(alpha: 0.15),
+                    color: color.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(goal['icon'], color: goal['color'], size: 24),
+                  child: Icon(iconData, color: color, size: 24),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    goal['title'],
+                    goal.name,
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: textColor),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -272,11 +303,11 @@ class _WealthPageState extends State<WealthPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      '\$${goal['current'].toStringAsFixed(0)}',
+                      '\$${currentAmount.toStringAsFixed(0)}',
                       style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: textColor),
                     ),
                     Text(
-                      '\$${goal['target'].toStringAsFixed(0)}',
+                      '\$${targetAmount.toStringAsFixed(0)}',
                       style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: mutedTextColor),
                     ),
                   ],
@@ -288,13 +319,13 @@ class _WealthPageState extends State<WealthPage> {
                     value: progress,
                     minHeight: 8,
                     backgroundColor: mutedTextColor?.withValues(alpha: 0.2),
-                    valueColor: AlwaysStoppedAnimation<Color>(goal['color']),
+                    valueColor: AlwaysStoppedAnimation<Color>(color),
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   '${(progress * 100).toStringAsFixed(1)}% Completed',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: goal['color']),
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color),
                 ),
               ],
             ),

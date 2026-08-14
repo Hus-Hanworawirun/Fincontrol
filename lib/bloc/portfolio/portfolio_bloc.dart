@@ -36,6 +36,8 @@ class PortfolioBloc extends Bloc<PortfolioEvent, PortfolioState> {
   void _onAddPortfolio(AddPortfolio event, Emitter<PortfolioState> emit) async {
     try {
       await _portfolioRepository.addPortfolio(event.portfolio);
+      // Reload from server
+      add(LoadPortfolios(''));
     } catch (e) {
       if (!isClosed) emit(PortfolioError(e.toString()));
     }

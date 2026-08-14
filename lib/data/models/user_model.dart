@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UserModel {
   final String uid;
@@ -30,7 +29,7 @@ class UserModel {
       accountNumber: map['accountNumber'] as String? ?? '',
       language: map['language'] as String? ?? 'en',
       isDarkMode: map['isDarkMode'] as bool? ?? false,
-      createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      createdAt: map['createdAt'] != null ? DateTime.tryParse(map['createdAt'].toString()) ?? DateTime.now() : DateTime.now(),
     );
   }
 
@@ -42,7 +41,7 @@ class UserModel {
       'accountNumber': accountNumber,
       'language': language,
       'isDarkMode': isDarkMode,
-      'createdAt': Timestamp.fromDate(createdAt),
+      'createdAt': createdAt.toIso8601String(),
     };
   }
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../bloc/transaction/transaction_bloc.dart';
 import '../../bloc/transaction/transaction_event.dart';
 import '../../data/models/transaction_model.dart';
@@ -99,11 +98,10 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     if (note.isEmpty || amountText.isEmpty || _selectedCategory == null) return;
     
     final amount = double.tryParse(amountText) ?? 0.0;
-    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
     
     final t = TransactionModel(
       id: widget.existingTransaction?.id ?? '',
-      userId: userId,
+      userId: '',
       amount: amount,
       category: _selectedCategory!,
       date: _selectedDate,

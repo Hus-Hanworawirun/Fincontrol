@@ -1,6 +1,10 @@
 import 'package:fincontrol/view/wealth/created_portfolio.dart';
 import 'package:fincontrol/view/wealth/invest_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fincontrol/bloc/portfolio/portfolio_bloc.dart';
+import 'package:fincontrol/bloc/portfolio/portfolio_event.dart';
+import 'package:fincontrol/data/models/portfolio_model.dart';
 import '../widgets/glass_container.dart';
 
 class CreatePortfolioPage extends StatefulWidget {
@@ -250,6 +254,18 @@ class _CreatePortfolioPageState extends State<CreatePortfolioPage> {
                     elevation: 0,
                   ),
                   onPressed: () {
+                    if (_nameController.text.isNotEmpty) {
+                      final goal = PortfolioModel(
+                        id: '',
+                        userId: '',
+                        name: _nameController.text,
+                        icon: _selectedIcon.codePoint,
+                        note: _noteController.text,
+                        targetGoal: double.tryParse(_goalController.text),
+                        createdAt: DateTime.now(),
+                      );
+                      context.read<PortfolioBloc>().add(AddPortfolio(goal));
+                    }
                     Navigator.push(
                       context,
                       MaterialPageRoute(

@@ -21,30 +21,54 @@ class AssetModel {
     required this.currentPrice,
   });
 
+  AssetModel copyWith({
+    String? id,
+    String? userId,
+    String? portfolioId,
+    String? name,
+    String? tickerSymbol,
+    String? category,
+    double? totalQuantity,
+    double? averageBuyPrice,
+    double? currentPrice,
+  }) {
+    return AssetModel(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      portfolioId: portfolioId ?? this.portfolioId,
+      name: name ?? this.name,
+      tickerSymbol: tickerSymbol ?? this.tickerSymbol,
+      category: category ?? this.category,
+      totalQuantity: totalQuantity ?? this.totalQuantity,
+      averageBuyPrice: averageBuyPrice ?? this.averageBuyPrice,
+      currentPrice: currentPrice ?? this.currentPrice,
+    );
+  }
+
   factory AssetModel.fromMap(Map<String, dynamic> map, String id) {
     return AssetModel(
       id: id,
-      userId: map['userId'] as String? ?? '',
-      portfolioId: map['portfolioId'] as String? ?? '',
+      userId: map['user_id'] as String? ?? '',
+      portfolioId: map['portfolio_id'] as String? ?? '',
       name: map['name'] as String? ?? '',
-      tickerSymbol: map['tickerSymbol'] as String? ?? '',
+      tickerSymbol: map['ticker_symbol'] as String? ?? '',
       category: map['category'] as String? ?? '',
-      totalQuantity: (map['totalQuantity'] as num?)?.toDouble() ?? 0.0,
-      averageBuyPrice: (map['averageBuyPrice'] as num?)?.toDouble() ?? 0.0,
-      currentPrice: (map['currentPrice'] as num?)?.toDouble() ?? 0.0,
+      totalQuantity: (map['quantity'] as num?)?.toDouble() ?? 0.0,
+      averageBuyPrice: (map['average_buy_price'] as num?)?.toDouble() ?? 0.0,
+      currentPrice: (map['current_price'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
-      'userId': userId,
-      'portfolioId': portfolioId,
+      'user_id': userId,
+      'portfolio_id': portfolioId,
       'name': name,
-      'tickerSymbol': tickerSymbol,
+      'ticker_symbol': tickerSymbol,
       'category': category,
-      'totalQuantity': totalQuantity,
-      'averageBuyPrice': averageBuyPrice,
-      'currentPrice': currentPrice,
+      'quantity': totalQuantity,
+      'average_buy_price': averageBuyPrice,
+      'current_price': currentPrice,
     };
   }
 }

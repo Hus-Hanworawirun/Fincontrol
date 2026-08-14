@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/glass_container.dart';
+import '../../data/models/notification_model.dart';
+import '../../data/repositories/notification_repository.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -9,55 +11,49 @@ class NotificationsPage extends StatefulWidget {
 }
 
 class _NotificationsPageState extends State<NotificationsPage> {
-  final List<Map<String, dynamic>> _notifications = [
-    {
-      'title': 'Market Alert',
-      'message': 'Apple Inc. (AAPL) is up 5.2% today!',
-      'time': '10m ago',
-      'icon': Icons.trending_up,
-      'color': Colors.greenAccent.shade400,
-      'isRead': false,
-    },
-    {
-      'title': 'Goal Milestone',
-      'message': 'You reached 50% of your New Car goal! Keep it up! 🎉',
-      'time': '2h ago',
-      'icon': Icons.flag,
-      'color': Colors.orangeAccent,
-      'isRead': false,
-    },
-    {
-      'title': 'AI Insight',
-      'message': 'Your Weekly Summary is ready! You saved 10% more this week compared to last week.',
-      'time': '5h ago',
-      'icon': Icons.auto_awesome,
-      'color': Colors.blueAccent,
-      'isRead': true,
-    },
-    {
-      'title': 'Budget Warning',
-      'message': 'Unusual spending detected: \$150 on Dining out this week.',
-      'time': '1d ago',
-      'icon': Icons.warning_amber_rounded,
-      'color': Colors.redAccent.shade400,
-      'isRead': true,
-    },
-    {
-      'title': 'Bill Reminder',
-      'message': 'Upcoming recurring expense: Netflix Subscription (\$15.99) tomorrow.',
-      'time': '2d ago',
-      'icon': Icons.calendar_today,
-      'color': Colors.purpleAccent,
-      'isRead': true,
-    },
-  ];
+  final NotificationRepository _repo = NotificationRepository();
+  String _userId = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _userId = ''; // Backend JWT infers userId
+  }
 
   void _markAllAsRead() {
-    setState(() {
-      for (var notif in _notifications) {
-        notif['isRead'] = true;
-      }
-    });
+    if (_userId.isNotEmpty) {
+      _repo.markAllAsRead(_userId);
+    }
+  }
+
+  IconData _getIconForType(String type) {
+    switch (type) {
+      case 'market': return Icons.trending_up;
+      case 'goal': return Icons.flag;
+      case 'ai': return Icons.auto_awesome;
+      case 'budget': return Icons.warning_amber_rounded;
+      case 'bill': return Icons.calendar_today;
+      default: return Icons.notifications;
+    }
+  }
+
+  Color _getColorForType(String type) {
+    switch (type) {
+      case 'market': return Colors.greenAccent.shade400;
+      case 'goal': return Colors.orangeAccent;
+      case 'ai': return Colors.blueAccent;
+      case 'budget': return Colors.redAccent.shade400;
+      case 'bill': return Colors.purpleAccent;
+      default: return Colors.grey;
+    }
+  }
+
+  String _formatTime(DateTime time) {
+    final diff = DateTime.now().difference(time);
+    if (diff.inDays > 0) return '${diff.inDays}d ago';
+    if (diff.inHours > 0) return '${diff.inHours}h ago';
+    if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
+    return 'Just now';
   }
 
   @override
@@ -118,82 +114,120 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 ),
               ),
               Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.only(left: 20, right: 20, top: 8, bottom: 24),
-                  itemCount: _notifications.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-            final notif = _notifications[index];
-            final isRead = notif['isRead'] as bool;
-            final iconColor = notif['color'] as Color;
+                child: StreamBuilder<List<NotificationModel>>(
+                  stream: _repo.getNotifications(_userId),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final notifications = snapshot.data ?? [];
+                    if (notifications.isEmpty) {
+                      return Center(
+                        child: Text("You're all caught up!", style: TextStyle(color: mutedTextColor)),
+                      );
+                    }
+                    return ListView.separated(
+                      padding: const EdgeInsets.only(left: 20, right: 20, top: 8, bottom: 24),
+                      itemCount: notifications.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final notif = notifications[index];
+                        final isRead = notif.isRead;
+                        final iconColor = _getColorForType(notif.type);
 
-            return GlassContainer(
-              padding: const EdgeInsets.all(16),
-              border: isRead ? null : Border.all(color: primaryColor.withValues(alpha: 0.5), width: 1.5),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: iconColor.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(notif['icon'], color: iconColor),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              notif['title'],
-                              style: TextStyle(
-                                color: textColor,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
+                        return Dismissible(
+                          key: Key(notif.id),
+                          direction: DismissDirection.endToStart,
+                          background: Container(
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.only(right: 20),
+                            decoration: BoxDecoration(
+                              color: Colors.redAccent,
+                              borderRadius: BorderRadius.circular(16),
                             ),
-                            Text(
-                              notif['time'],
-                              style: TextStyle(
-                                color: mutedTextColor,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          notif['message'],
-                          style: TextStyle(
-                            color: isRead ? mutedTextColor : textColor,
-                            fontSize: 14,
-                            height: 1.4,
+                            child: const Icon(Icons.delete, color: Colors.white),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (!isRead) ...[
-                    const SizedBox(width: 12),
-                    Container(
-                      width: 8,
-                      height: 8,
-                      margin: const EdgeInsets.only(top: 6),
-                      decoration: BoxDecoration(
-                        color: primaryColor,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            );
+                          onDismissed: (_) {
+                            _repo.deleteNotification(notif.id);
+                          },
+                          child: GestureDetector(
+                            onTap: () {
+                              if (!isRead) _repo.markAsRead(notif.id);
+                            },
+                            child: GlassContainer(
+                              padding: const EdgeInsets.all(16),
+                              border: isRead ? null : Border.all(color: primaryColor.withValues(alpha: 0.5), width: 1.5),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    width: 48,
+                                    height: 48,
+                                    decoration: BoxDecoration(
+                                      color: iconColor.withValues(alpha: 0.2),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(_getIconForType(notif.type), color: iconColor),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                notif.title,
+                                                style: TextStyle(
+                                                  color: textColor,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 16,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            Text(
+                                              _formatTime(notif.createdAt),
+                                              style: TextStyle(
+                                                color: mutedTextColor,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          notif.message,
+                                          style: TextStyle(
+                                            color: isRead ? mutedTextColor : textColor,
+                                            fontSize: 14,
+                                            height: 1.4,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (!isRead) ...[
+                                    const SizedBox(width: 12),
+                                    Container(
+                                      width: 8,
+                                      height: 8,
+                                      margin: const EdgeInsets.only(top: 6),
+                                      decoration: BoxDecoration(
+                                        color: primaryColor,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    );
                   },
                 ),
               ),

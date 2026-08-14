@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../bloc/auth/auth_bloc.dart';
 import '../../bloc/auth/auth_event.dart';
 import '../../bloc/auth/auth_state.dart';
+import '../navigationbar/bottom_navigation_bar.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -45,7 +46,7 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget _buildSocialButton(String imagePath) {
+  Widget _buildSocialButton(BuildContext context, String imagePath) {
     return Container(
       width: 64,
       height: 64,
@@ -61,7 +62,11 @@ class _LoginPageState extends State<LoginPage> {
         ],
       ),
       child: IconButton(
-        onPressed: () {},
+        onPressed: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Social login coming soon!')),
+          );
+        },
         icon: Image.asset(imagePath, width: 28, height: 28),
       ),
     );
@@ -118,8 +123,11 @@ class _LoginPageState extends State<LoginPage> {
           if (state.status == AuthStatus.error) {
             _showErrorSnackBar(context, state.errorMessage ?? 'Authentication Error');
           } else if (state.status == AuthStatus.authenticated) {
-            // Pop the LoginPage so the underlying main.dart home takes over (MainNavigation)
-            Navigator.of(context).popUntil((route) => route.isFirst);
+            // Navigate to MainNavigationShell and clear the back stack
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => const MainNavigationShell()),
+              (route) => false,
+            );
           }
         },
         builder: (context, state) {
@@ -200,7 +208,9 @@ class _LoginPageState extends State<LoginPage> {
                           alignment: Alignment.centerRight,
                           child: TextButton(
                             onPressed: () {
-                              // Forgot Password Logic
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Forgot Password coming soon!')),
+                              );
                             },
                             style: TextButton.styleFrom(
                               padding: EdgeInsets.zero,
@@ -301,9 +311,9 @@ class _LoginPageState extends State<LoginPage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            _buildSocialButton('assets/googleLogo/google_logo.png'),
+                            _buildSocialButton(context, 'assets/googleLogo/google_logo.png'),
                             const SizedBox(width: 24),
-                            _buildSocialButton('assets/appleLogo/apple_logo.png'),
+                            _buildSocialButton(context, 'assets/appleLogo/apple_logo.png'),
                           ],
                         ),
                       ],

@@ -46,66 +46,97 @@ class CreateActionMenu extends StatelessWidget {
           const SizedBox(height: 32),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 24, // Horizontal spacing between icons
-              runSpacing: 24, // Vertical spacing between rows
-              children: [
-                _buildGridItem(
-                  context,
-                  icon: Icons.receipt_long,
-                  title: 'Transaction',
-                  color: Colors.green,
-                  textColor: textColor,
-                  onTap: () {
-                    Navigator.pop(context);
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (context) => const AddTransactionSheet(),
-                    );
-                  },
-                ),
-                _buildGridItem(
-                  context,
-                  icon: Icons.account_balance_wallet,
-                  title: 'Asset',
-                  color: Colors.blue,
-                  textColor: textColor,
-                  onTap: () {
-                    Navigator.pop(context);
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (context) => const AddEntrySheet(),
-                    );
-                  },
-                ),
-                _buildGridItem(
-                  context,
-                  icon: Icons.flag,
-                  title: 'Goal',
-                  color: Colors.orange,
-                  textColor: textColor,
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const CreatePortfolioPage()));
-                  },
-                ),
-                _buildGridItem(
-                  context,
-                  icon: Icons.trending_up,
-                  title: 'Invest',
-                  color: primaryColor,
-                  textColor: textColor,
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const InvestPage()));
-                  },
-                ),
-              ],
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth > 400;
+                
+                final items = [
+                  _buildGridItem(
+                    context,
+                    icon: Icons.receipt_long,
+                    title: 'Transaction',
+                    color: Colors.green,
+                    textColor: textColor,
+                    onTap: () {
+                      Navigator.pop(context);
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => const AddTransactionSheet(),
+                      );
+                    },
+                  ),
+                  _buildGridItem(
+                    context,
+                    icon: Icons.account_balance_wallet,
+                    title: 'Asset',
+                    color: Colors.blue,
+                    textColor: textColor,
+                    onTap: () {
+                      Navigator.pop(context);
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => const AddEntrySheet(),
+                      );
+                    },
+                  ),
+                  _buildGridItem(
+                    context,
+                    icon: Icons.flag,
+                    title: 'Goal',
+                    color: Colors.orange,
+                    textColor: textColor,
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => const CreatePortfolioPage()));
+                    },
+                  ),
+                  _buildGridItem(
+                    context,
+                    icon: Icons.trending_up,
+                    title: 'Invest',
+                    color: primaryColor,
+                    textColor: textColor,
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => const InvestPage()));
+                    },
+                  ),
+                ];
+
+                if (isWide) {
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: items.map((item) => Expanded(child: item)).toList(),
+                  );
+                } else {
+                  return Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: items[0]),
+                          Expanded(child: items[1]),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: items[2]),
+                          Expanded(child: items[3]),
+                        ],
+                      ),
+                    ],
+                  );
+                }
+              },
             ),
           ),
           const SizedBox(height: 16),
@@ -123,32 +154,30 @@ class CreateActionMenu extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
-      child: SizedBox(
-        width: 80, // Fixed width to ensure grid alignment
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
             ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: textColor,
-              ),
+            child: Icon(icon, color: color, size: 32),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: textColor,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

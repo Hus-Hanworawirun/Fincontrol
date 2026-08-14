@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../data/models/asset_model.dart';
 import '../widgets/glass_container.dart';
+import '../../bloc/asset/asset_bloc.dart';
+import '../../bloc/asset/asset_event.dart';
 
 class AddEntrySheet extends StatefulWidget {
   final AssetModel? asset;
+  final String? portfolioId;
   
-  const AddEntrySheet({super.key, this.asset});
+  const AddEntrySheet({super.key, this.asset, this.portfolioId});
 
   @override
   State<AddEntrySheet> createState() => _AddEntrySheetState();
@@ -16,7 +20,7 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _symbolController = TextEditingController();
   final TextEditingController _quantityController = TextEditingController();
-  String _selectedCategory = 'Investment';
+  String _selectedCategory = 'Stock';
   DateTime _selectedDate = DateTime.now();
 
   @override
@@ -24,6 +28,16 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
     super.initState();
     if (widget.asset != null) {
       _symbolController.text = widget.asset!.tickerSymbol;
+      _noteController.text = widget.asset!.name;
+      _amountController.text = widget.asset!.averageBuyPrice.toString();
+      _quantityController.text = widget.asset!.totalQuantity.toString();
+      String initialCategory = widget.asset!.category;
+      if (initialCategory == 'Stocks') initialCategory = 'Stock';
+      if (initialCategory == 'ETFs') initialCategory = 'ETF';
+      if (!['Stock', 'Crypto', 'ETF', 'Mutual Fund', 'Other'].contains(initialCategory)) {
+        initialCategory = 'Other';
+      }
+      _selectedCategory = initialCategory;
     }
   }
 
@@ -55,7 +69,48 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
   }
 
   void _saveEntry() {
-    // TODO: implement save logic
+    final name = _noteController.text.trim();
+    final symbol = _symbolController.text.trim();
+    double quantity = double.tryParse(_quantityController.text.trim()) ?? 0.0;
+    double amount = double.tryParse(_amountController.text.trim()) ?? 0.0;
+    
+    double buyPrice = amount;
+    if (quantity > 0 && amount > 0) {
+      // If user provided both, we treat Amount as total investment and find price per unit.
+      // But if they just typed it and the auto-calc ran, buyPrice = amount / quantity will be exactly currentPrice.
+      buyPrice = amount / quantity;
+    } else if (quantity <= 0 && amount > 0 && widget.asset != null && widget.asset!.currentPrice > 0) {
+      quantity = amount / widget.asset!.currentPrice;
+      buyPrice = widget.asset!.currentPrice;
+    }
+
+    if (name.isEmpty || quantity <= 0 || buyPrice <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all fields correctly')),
+      );
+      return;
+    }
+
+    // Set user to dummy since backend infers it
+    bool isNew = widget.asset == null || widget.asset!.id.isEmpty || widget.asset!.id.startsWith('mock_');
+    final assetToSave = AssetModel(
+      id: isNew ? '' : widget.asset!.id,
+      userId: '',
+      portfolioId: widget.portfolioId ?? (widget.asset != null && !widget.asset!.id.startsWith('mock_') ? widget.asset!.portfolioId : ''),
+      name: name,
+      tickerSymbol: symbol.toUpperCase(),
+      category: _selectedCategory,
+      totalQuantity: quantity,
+      averageBuyPrice: buyPrice,
+      currentPrice: widget.asset?.currentPrice ?? buyPrice,
+    );
+
+    if (isNew) {
+      context.read<AssetBloc>().add(AddAsset(assetToSave));
+    } else {
+      context.read<AssetBloc>().add(UpdateAsset(assetToSave));
+    }
+    
     Navigator.pop(context);
   }
 
@@ -122,7 +177,7 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               ),
               style: TextStyle(fontSize: 16, color: textColor, fontWeight: FontWeight.w600),
-              items: ['Investment', 'Deposit', 'Withdrawal']
+              items: ['Stock', 'Crypto', 'ETF', 'Mutual Fund', 'Other']
                   .map((String category) {
                 return DropdownMenuItem(
                   value: category,
@@ -162,6 +217,15 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
             TextField(
               controller: _amountController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              onChanged: (val) {
+                final amount = double.tryParse(val.trim()) ?? 0.0;
+                if (amount > 0 && widget.asset != null && widget.asset!.currentPrice > 0) {
+                  final qty = amount / widget.asset!.currentPrice;
+                  _quantityController.text = qty.toStringAsFixed(6);
+                } else if (amount == 0) {
+                  _quantityController.text = '';
+                }
+              },
               style: TextStyle(color: textColor, fontWeight: FontWeight.w600, fontSize: 18),
               decoration: InputDecoration(
                 hintText: '0.00',

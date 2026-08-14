@@ -3,46 +3,35 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../widgets/glass_container.dart';
 
+import 'package:fincontrol/data/models/portfolio_model.dart';
+import 'package:fincontrol/data/models/asset_model.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../bloc/asset/asset_bloc.dart';
+import '../../bloc/asset/asset_event.dart';
+import '../../bloc/asset/asset_state.dart';
+import 'package:fincontrol/view/wealth/add_entry_sheet.dart';
+
 class CreatedPortfolio extends StatefulWidget {
-  const CreatedPortfolio({super.key});
+  final PortfolioModel? portfolio;
+  final double? currentAmount;
+
+  const CreatedPortfolio({
+    super.key,
+    this.portfolio,
+    this.currentAmount,
+  });
 
   @override
   State<CreatedPortfolio> createState() => _CreatedPortfolioState();
 }
 
 class _CreatedPortfolioState extends State<CreatedPortfolio> {
-  // Use this list to control the UI state
-  // Empty list shows the 'Invest Now' state
-  // Populated list shows the investment cards
-  final List<Map<String, dynamic>> _assets = [
-    {
-      'name': 'Apple Inc.',
-      'ticker': 'AAPL',
-      'value': 4520.50,
-      'change': 1.2,
-      'isUp': true,
-      'icon': Icons.apple,
-      'color': Colors.grey.shade800,
-    },
-    {
-      'name': 'Bitcoin',
-      'ticker': 'BTC',
-      'value': 12050.00,
-      'change': 4.5,
-      'isUp': true,
-      'icon': Icons.currency_bitcoin,
-      'color': Colors.orange,
-    },
-    {
-      'name': 'S&P 500 ETF',
-      'ticker': 'VOO',
-      'value': 8340.25,
-      'change': 0.8,
-      'isUp': false,
-      'icon': Icons.trending_up,
-      'color': Colors.blue,
-    },
-  ];
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<AssetBloc>().add(LoadAssets(widget.portfolio?.id));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +40,65 @@ class _CreatedPortfolioState extends State<CreatedPortfolio> {
     final mutedTextColor = Theme.of(context).textTheme.bodySmall?.color ?? Colors.grey;
     final primaryColor = Theme.of(context).colorScheme.primary;
 
-    return Container(
+    return BlocBuilder<AssetBloc, AssetState>(
+      builder: (context, state) {
+        List<AssetModel> assets = [];
+        double totalBalance = 0.0;
+        double totalInvested = 0.0;
+        
+        if (state is AssetLoaded) {
+          assets = state.assets;
+          for (var asset in assets) {
+            totalBalance += asset.currentPrice * asset.totalQuantity;
+            totalInvested += asset.averageBuyPrice * asset.totalQuantity;
+          }
+        } else {
+          totalBalance = widget.currentAmount ?? 0.0;
+        }
+
+        final double totalReturn = totalBalance - totalInvested;
+        final double returnPercentage = totalInvested > 0 ? (totalReturn / totalInvested) * 100 : 0.0;
+        final bool isPositive = totalReturn >= 0;
+        final Color returnColor = isPositive ? Colors.greenAccent.shade400 : Colors.redAccent.shade400;
+
+        final double? targetGoal = widget.portfolio?.targetGoal;
+        final bool hasGoal = targetGoal != null && targetGoal > 0;
+        final double goalProgress = hasGoal
+            ? (totalBalance / targetGoal).clamp(0.0, 1.0)
+            : 0.0;
+
+        final List<Color> sectionColors = const [
+          Colors.blueAccent,
+          Colors.orangeAccent,
+          Colors.purpleAccent,
+          Colors.greenAccent,
+          Colors.redAccent,
+          Colors.tealAccent,
+        ];
+
+        List<PieChartSectionData> pieChartSections = [];
+        if (assets.isNotEmpty && totalBalance > 0) {
+          for (int i = 0; i < assets.length; i++) {
+            final asset = assets[i];
+            final double assetValue = asset.currentPrice * asset.totalQuantity;
+            final double percentage = (assetValue / totalBalance) * 100;
+            pieChartSections.add(
+              PieChartSectionData(
+                color: sectionColors[i % sectionColors.length],
+                value: percentage,
+                title: percentage > 5 ? '${percentage.toStringAsFixed(0)}%' : '',
+                radius: 40,
+                titleStyle: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            );
+          }
+        }
+
+        return Container(
       decoration: BoxDecoration(
         gradient: isDarkMode 
           ? const LinearGradient(
@@ -75,11 +122,10 @@ class _CreatedPortfolioState extends State<CreatedPortfolio> {
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
-            'My Growth Portfolio',
+            widget.portfolio?.name ?? 'My Portfolio',
             style: TextStyle(
               color: textColor,
-              fontWeight: 
-              FontWeight.bold,
+              fontWeight: FontWeight.bold,
             ),
           ),
           centerTitle: true,
@@ -91,119 +137,167 @@ class _CreatedPortfolioState extends State<CreatedPortfolio> {
             children: [
               // Top Summary Card
               GlassContainer(
-                height: 220,
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
-                child: Stack(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Background chart
-                    Positioned.fill(
-                      top: 60,
-                      child: Opacity(
-                        opacity: 0.4,
-                        child: LineChart(
-                          LineChartData(
-                            gridData: const FlGridData(show: false),
-                            titlesData: const FlTitlesData(show: false),
-                            borderData: FlBorderData(show: false),
-                            lineBarsData: [
-                              LineChartBarData(
-                                spots: const [
-                                  FlSpot(0, 3),
-                                  FlSpot(1, 4),
-                                  FlSpot(2, 3.5),
-                                  FlSpot(3, 5),
-                                  FlSpot(4, 4.5),
-                                  FlSpot(5, 7),
-                                ],
-                                isCurved: true,
-                                color: Colors.greenAccent.shade400,
-                                barWidth: 3,
-                                isStrokeCapRound: true,
-                                dotData: const FlDotData(show: false),
-                                belowBarData: BarAreaData(
-                                  show: true,
-                                  color: Colors.greenAccent.shade400.withValues(alpha: 0.15),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Total Balance',
+                            style: TextStyle(
+                              color: mutedTextColor,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '\$${totalBalance.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: 36,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: -1,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: (assets.isEmpty ? primaryColor : returnColor).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      assets.isEmpty
+                                          ? Icons.info_outline
+                                          : (isPositive ? Icons.arrow_upward : Icons.arrow_downward),
+                                      size: 14,
+                                      color: assets.isEmpty ? primaryColor : returnColor,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      assets.isNotEmpty
+                                          ? '${isPositive ? '+' : '-'}\$${totalReturn.abs().toStringAsFixed(2)} (${returnPercentage.abs().toStringAsFixed(1)}%)'
+                                          : (hasGoal
+                                              ? '${(goalProgress * 100).toStringAsFixed(0)}% of Target'
+                                              : 'No assets yet'),
+                                      style: TextStyle(
+                                        color: assets.isEmpty ? primaryColor : returnColor,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
+                              if (assets.isNotEmpty) ...[
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Total Return',
+                                  style: TextStyle(
+                                    color: mutedTextColor,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
-                        ),
-                      ),
-                    ),
-                    // Content
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Total Balance',
-                          style: TextStyle(
-                            color: mutedTextColor,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '\$24,910.75',
-                          style: TextStyle(
-                            color: textColor,
-                            fontSize: 36,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: -1,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.greenAccent.shade400.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.arrow_upward, size: 14, color: Colors.greenAccent.shade400),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '\$430.50 (1.7%)',
-                                    style: TextStyle(
-                                      color: Colors.greenAccent.shade400,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                    ),
+                          if (hasGoal) ...[
+                            const SizedBox(height: 16),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Target: \$${targetGoal.toStringAsFixed(0)}',
+                                  style: TextStyle(
+                                    color: mutedTextColor,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
                                   ),
-                                ],
-                              ),
+                                ),
+                                Text(
+                                  '${(goalProgress * 100).toStringAsFixed(1)}%',
+                                  style: TextStyle(
+                                    color: primaryColor,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Today',
-                              style: TextStyle(
-                                color: mutedTextColor,
-                                fontSize: 12,
+                            const SizedBox(height: 6),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: LinearProgressIndicator(
+                                value: goalProgress,
+                                minHeight: 6,
+                                backgroundColor: isDarkMode ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
+                                valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
                               ),
                             ),
                           ],
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
+                    if (assets.isNotEmpty && totalBalance > 0)
+                      SizedBox(
+                        width: 100,
+                        height: 100,
+                        child: PieChart(
+                          PieChartData(
+                            sections: pieChartSections,
+                            centerSpaceRadius: 16,
+                            sectionsSpace: 2,
+                            borderData: FlBorderData(show: false),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
               const SizedBox(height: 32),
-              Text(
-                'My Investments',
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'My Investments',
+                    style: TextStyle(
+                      color: textColor,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  if (assets.isNotEmpty)
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => InvestPage(portfolioId: widget.portfolio?.id),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('Add Asset'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: primaryColor,
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(height: 16),
               Expanded(
-                child: _assets.isEmpty
+                child: assets.isEmpty
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -232,12 +326,12 @@ class _CreatedPortfolioState extends State<CreatedPortfolio> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => const InvestPage(),
+                                      builder: (context) => InvestPage(portfolioId: widget.portfolio?.id),
                                     ),
                                   );
                                 },
                                 child: const Text(
-                                  'Invest Now',
+                                  'Add Asset',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
@@ -250,81 +344,143 @@ class _CreatedPortfolioState extends State<CreatedPortfolio> {
                         ),
                       )
                     : ListView.separated(
-                        itemCount: _assets.length,
+                        itemCount: assets.length,
                         separatorBuilder: (context, index) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
-                          final asset = _assets[index];
-                          final isUp = asset['isUp'] as bool;
-                          final returnColor = isUp ? Colors.greenAccent.shade400 : Colors.redAccent.shade400;
+                          final asset = assets[index];
+                          IconData iconData = Icons.account_balance_wallet;
+                          if (asset.category == 'Stock') iconData = Icons.trending_up;
+                          if (asset.category == 'Crypto') iconData = Icons.currency_bitcoin;
 
-                          return GlassContainer(
-                            padding: const EdgeInsets.all(16),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 48,
-                                  height: 48,
-                                  decoration: BoxDecoration(
-                                    color: asset['color'].withValues(alpha: 0.2),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Icon(asset['icon'], color: asset['color']),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        asset['name'],
-                                        style: TextStyle(
-                                          color: textColor,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                      Text(
-                                        asset['ticker'],
-                                        style: TextStyle(
-                                          color: mutedTextColor,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
+                          final bool isCrypto = asset.category == 'Crypto';
+                          
+                          // Calculate profit/loss for this individual asset
+                          final double assetInvested = asset.averageBuyPrice * asset.totalQuantity;
+                          final double assetCurrentValue = asset.currentPrice * asset.totalQuantity;
+                          final double assetProfit = assetCurrentValue - assetInvested;
+                          final double assetReturnPct = assetInvested > 0 ? (assetProfit / assetInvested) * 100 : 0.0;
+                          final bool assetIsPositive = assetProfit >= 0;
+                          final Color assetReturnColor = assetIsPositive ? Colors.greenAccent.shade400 : Colors.redAccent.shade400;
+
+                          return Dismissible(
+                            key: Key(asset.id),
+                            direction: DismissDirection.endToStart,
+                            background: Container(
+                              alignment: Alignment.centerRight,
+                              padding: const EdgeInsets.only(right: 20),
+                              decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(20)),
+                              child: const Icon(Icons.delete, color: Colors.white),
+                            ),
+                            onDismissed: (direction) {
+                              context.read<AssetBloc>().add(DeleteAsset(asset.id));
+                            },
+                            child: GestureDetector(
+                              onTap: () {
+                                showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (context) => AddEntrySheet(asset: asset, portfolioId: widget.portfolio?.id),
+                                );
+                              },
+                              child: GlassContainer(
+                                padding: const EdgeInsets.all(16),
+                                child: Row(
                                   children: [
-                                    Text(
-                                      '\$${asset['value'].toStringAsFixed(2)}',
-                                      style: TextStyle(
-                                        color: textColor,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: isDarkMode ? Colors.white.withValues(alpha: 0.1) : primaryColor.withValues(alpha: 0.1),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Image.asset(
+                                        'assets/icons/${asset.tickerSymbol}.png',
+                                        width: 24,
+                                        height: 24,
+                                        errorBuilder: (context, error, stackTrace) =>
+                                            Center(
+                                              child: Text(
+                                                asset.tickerSymbol.isNotEmpty ? asset.tickerSymbol.substring(0, 1) : '?',
+                                                style: TextStyle(
+                                                  color: primaryColor,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 16,
+                                                ),
+                                              ),
+                                            ),
                                       ),
                                     ),
-                                    Row(
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            asset.name,
+                                            style: TextStyle(
+                                              color: textColor,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              Container(
+                                                width: 8,
+                                                height: 8,
+                                                decoration: BoxDecoration(
+                                                  color: sectionColors[index % sectionColors.length],
+                                                  shape: BoxShape.circle,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                '${asset.tickerSymbol} • ${totalBalance > 0 ? ((assetCurrentValue / totalBalance) * 100).toStringAsFixed(1) : 0}%',
+                                                style: TextStyle(
+                                                  color: mutedTextColor,
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.end,
                                       children: [
-                                        Icon(
-                                          isUp ? Icons.trending_up : Icons.trending_down,
-                                          size: 14,
-                                          color: returnColor,
-                                        ),
-                                        const SizedBox(width: 4),
                                         Text(
-                                          '${isUp ? '+' : '-'}${asset['change']}%',
+                                          '\$${assetCurrentValue.toStringAsFixed(2)}',
                                           style: TextStyle(
-                                            color: returnColor,
+                                            color: textColor,
                                             fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'Qty: ${isCrypto ? asset.totalQuantity.toStringAsFixed(6) : asset.totalQuantity.toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                            color: mutedTextColor,
+                                            fontWeight: FontWeight.w600,
                                             fontSize: 13,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          '${assetIsPositive ? '+' : '-'}\$${assetProfit.abs().toStringAsFixed(2)} (${assetReturnPct.abs().toStringAsFixed(2)}%)',
+                                          style: TextStyle(
+                                            color: assetReturnColor,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
                                           ),
                                         ),
                                       ],
                                     ),
                                   ],
                                 ),
-                              ],
+                              ),
                             ),
                           );
                         },
@@ -334,6 +490,8 @@ class _CreatedPortfolioState extends State<CreatedPortfolio> {
           ),
         ),
       ),
+    );
+      },
     );
   }
 }

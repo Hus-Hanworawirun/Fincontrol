@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class TransactionModel {
   final String id;
   final String userId;
@@ -22,23 +20,23 @@ class TransactionModel {
   factory TransactionModel.fromMap(Map<String, dynamic> map, String id) {
     return TransactionModel(
       id: id,
-      userId: map['userId'] as String? ?? '',
+      userId: map['user_id'] as String? ?? '',
       type: map['type'] as String? ?? '',
       amount: (map['amount'] as num?)?.toDouble() ?? 0.0,
       category: map['category'] as String? ?? '',
       note: map['note'] as String? ?? '',
-      date: (map['date'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      date: map['date'] != null ? DateTime.tryParse(map['date'].toString()) ?? DateTime.now() : DateTime.now(),
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
-      'userId': userId,
+      'user_id': userId,
       'type': type,
       'amount': amount,
       'category': category,
       'note': note,
-      'date': Timestamp.fromDate(date),
+      'date': date.toIso8601String(),
     };
   }
 }

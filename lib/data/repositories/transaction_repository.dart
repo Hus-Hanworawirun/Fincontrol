@@ -1,36 +1,73 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/transaction_model.dart';
 
 class TransactionRepository {
-  final FirebaseFirestore _firestore;
+  final String baseUrl = 'http://10.0.2.2:8000';
 
-  TransactionRepository({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  Future<String?> _getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('jwt_token');
+  }
 
-  Stream<List<TransactionModel>> getTransactions(String userId) {
-    return _firestore
-        .collection('transactions')
-        .where('userId', isEqualTo: userId)
-        .snapshots()
-        .map((snapshot) {
-      final list = snapshot.docs
-          .map((doc) => TransactionModel.fromMap(doc.data(), doc.id))
-          .toList();
+  Stream<List<TransactionModel>> getTransactions(String userId) async* {
+    final token = await _getToken();
+    final response = await http.get(
+      Uri.parse('$baseUrl/transactions'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      final list = data.map((item) => TransactionModel.fromMap(item, item['id'])).toList();
       list.sort((a, b) => b.date.compareTo(a.date));
-      return list;
-    });
+      yield list;
+    } else {
+      throw Exception('Failed to load transactions');
+    }
   }
 
   Future<void> addTransaction(TransactionModel transaction) async {
-    await _firestore.collection('transactions').add(transaction.toMap());
+    final token = await _getToken();
+    final response = await http.post(
+      Uri.parse('$baseUrl/transactions'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json'
+      },
+      body: jsonEncode(transaction.toMap()..remove('id')),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to add transaction');
+    }
   }
 
   Future<void> updateTransaction(TransactionModel transaction) async {
     if (transaction.id.isEmpty) return;
-    await _firestore.collection('transactions').doc(transaction.id).update(transaction.toMap());
+    
+    final token = await _getToken();
+    final response = await http.put(
+      Uri.parse('$baseUrl/transactions/${transaction.id}'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json'
+      },
+      body: jsonEncode(transaction.toMap()..remove('id')),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update transaction');
+    }
   }
 
   Future<void> deleteTransaction(String id) async {
-    await _firestore.collection('transactions').doc(id).delete();
+    final token = await _getToken();
+    final response = await http.delete(
+      Uri.parse('$baseUrl/transactions/$id'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to delete transaction');
+    }
   }
 }

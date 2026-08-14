@@ -227,8 +227,8 @@ class _ActivityPageState extends State<ActivityPage> {
     double income = 0;
     double expense = 0;
     for (var t in transactions) {
-      if (t.type == 'Income') income += t.amount;
-      if (t.type == 'Expense') expense += t.amount;
+      if (t.type.toLowerCase() == 'income') income += t.amount.abs();
+      if (t.type.toLowerCase() == 'expense') expense += t.amount.abs();
     }
 
     return GlassContainer(
@@ -247,7 +247,7 @@ class _ActivityPageState extends State<ActivityPage> {
             child: BarChart(
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
-                maxY: (income > expense ? income : expense) * 1.2,
+                maxY: ((income > expense ? income : expense) == 0 ? 100.0 : (income > expense ? income : expense)) * 1.2,
                 barTouchData: BarTouchData(enabled: false),
                 titlesData: FlTitlesData(
                   show: true,
@@ -308,9 +308,9 @@ class _ActivityPageState extends State<ActivityPage> {
     double totalExpense = 0;
 
     for (var t in transactions) {
-      if (t.type == 'Expense') {
-        categoryTotals[t.category] = (categoryTotals[t.category] ?? 0) + t.amount;
-        totalExpense += t.amount;
+      if (t.type.toLowerCase() == 'expense') {
+        categoryTotals[t.category] = (categoryTotals[t.category] ?? 0) + t.amount.abs();
+        totalExpense += t.amount.abs();
       }
     }
 
@@ -423,7 +423,8 @@ class _ActivityPageState extends State<ActivityPage> {
       separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final record = transactions[index];
-        final isIncome = record.type == 'Income';
+        final isIncome = record.type.toLowerCase() == 'income';
+        final amt = record.amount.abs();
         
         return Dismissible(
           key: Key(record.id),
@@ -484,7 +485,7 @@ class _ActivityPageState extends State<ActivityPage> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '${isIncome ? "+" : "-"}\$${record.amount.toStringAsFixed(2)}',
+                    '${isIncome ? "+" : "-"}\$${amt.toStringAsFixed(2)}',
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
                       color: textColor,

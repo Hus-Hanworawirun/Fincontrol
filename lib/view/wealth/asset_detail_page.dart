@@ -9,7 +9,8 @@ import '../widgets/glass_container.dart';
 
 class AssetDetailPage extends StatefulWidget {
   final AssetModel asset;
-  const AssetDetailPage({super.key, required this.asset});
+  final String? portfolioId;
+  const AssetDetailPage({super.key, required this.asset, this.portfolioId});
   @override
   State<AssetDetailPage> createState() => _AssetDetailPageState();
 }
@@ -258,14 +259,16 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
               'assets/icons/${asset.tickerSymbol}.png',
               width: 32,
               height: 32,
-              errorBuilder: (context, error, stackTrace) => Text(
-                asset.tickerSymbol.isNotEmpty ? asset.tickerSymbol : asset.name,
-                style: TextStyle(
-                  color: primaryColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
+              errorBuilder: (context, error, stackTrace) => Center(
+                child: Text(
+                  asset.tickerSymbol.isNotEmpty ? asset.tickerSymbol.substring(0, 1) : '?',
+                  style: TextStyle(
+                    color: primaryColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
               ),
             ),
           ),
@@ -678,7 +681,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
                   context: context,
                   isScrollControlled: true,
                   backgroundColor: Colors.transparent,
-                  builder: (context) => AddEntrySheet(asset: asset),
+                  builder: (context) => AddEntrySheet(asset: asset, portfolioId: widget.portfolioId),
                 );
               },
               child: const Text(
