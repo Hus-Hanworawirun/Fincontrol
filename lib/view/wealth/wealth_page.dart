@@ -3,8 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fincontrol/bloc/asset/asset_bloc.dart';
 import 'package:fincontrol/bloc/asset/asset_state.dart';
 import '../widgets/glass_container.dart';
-import 'add_entry_sheet.dart';
 import 'invest_page.dart';
+import 'created_portfolio.dart';
 
 class WealthPage extends StatefulWidget {
   const WealthPage({super.key});
@@ -61,20 +61,6 @@ class _WealthPageState extends State<WealthPage> {
             const SizedBox(height: 100),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            builder: (context) => const AddEntrySheet(),
-          );
-        },
-        backgroundColor: primaryColor,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add),
-        label: const Text('Add Asset', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -246,10 +232,14 @@ class _WealthPageState extends State<WealthPage> {
   }
 
   Widget _buildGoalCard(BuildContext context, Map<String, dynamic> goal, double progress, Color? textColor, Color? mutedTextColor) {
-    return SizedBox(
-      width: 240,
-      child: GlassContainer(
-        padding: const EdgeInsets.all(20),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (context) => const CreatedPortfolio()));
+      },
+      child: SizedBox(
+        width: 240,
+        child: GlassContainer(
+          padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -311,7 +301,7 @@ class _WealthPageState extends State<WealthPage> {
           ],
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildAssetsSection(BuildContext context, Color? textColor, Color? mutedTextColor, Color primaryColor) {

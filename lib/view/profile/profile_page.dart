@@ -16,6 +16,7 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _biometricEnabled = true;
   bool _aiInsightsEnabled = true;
   bool _smartNotificationsEnabled = false;
+  String _selectedCurrency = 'USD';
 
   @override
   Widget build(BuildContext context) {
@@ -164,11 +165,18 @@ class _ProfilePageState extends State<ProfilePage> {
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('USD', style: TextStyle(fontWeight: FontWeight.bold, color: textColor)),
-                        Icon(Icons.chevron_right, color: mutedTextColor),
+                        Text('USD', style: TextStyle(fontWeight: _selectedCurrency == 'USD' ? FontWeight.bold : FontWeight.normal, color: _selectedCurrency == 'USD' ? textColor : mutedTextColor)),
+                        const SizedBox(width: 8),
+                        Container(width: 1, height: 16, color: textColor?.withValues(alpha: 0.2)),
+                        const SizedBox(width: 8),
+                        Text('THB', style: TextStyle(fontWeight: _selectedCurrency == 'THB' ? FontWeight.bold : FontWeight.normal, color: _selectedCurrency == 'THB' ? textColor : mutedTextColor)),
                       ],
                     ),
-                    onTap: () {},
+                    onTap: () {
+                      setState(() {
+                        _selectedCurrency = _selectedCurrency == 'USD' ? 'THB' : 'USD';
+                      });
+                    },
                   ),
                   _buildDivider(textColor),
                   _buildListTile(

@@ -25,6 +25,11 @@ class TransactionRepository {
     await _firestore.collection('transactions').add(transaction.toMap());
   }
 
+  Future<void> updateTransaction(TransactionModel transaction) async {
+    if (transaction.id.isEmpty) return;
+    await _firestore.collection('transactions').doc(transaction.id).update(transaction.toMap());
+  }
+
   Future<void> deleteTransaction(String id) async {
     await _firestore.collection('transactions').doc(id).delete();
   }

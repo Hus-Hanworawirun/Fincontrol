@@ -1,6 +1,6 @@
 import 'package:fincontrol/view/activity/activity_page.dart';
 import 'package:fincontrol/view/home/home_page.dart';
-import 'package:fincontrol/view/navigationbar/add_transaction_sheet.dart';
+import 'package:fincontrol/view/navigationbar/create_action_menu.dart';
 import 'package:fincontrol/view/profile/profile_page.dart';
 import 'package:fincontrol/view/wealth/wealth_page.dart';
 import 'package:flutter/material.dart';
@@ -23,7 +23,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
-        builder: (context) => const AddTransactionSheet(),
+        builder: (context) => const CreateActionMenu(),
       );
       return;
     }

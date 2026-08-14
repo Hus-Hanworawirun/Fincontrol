@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fincontrol/bloc/transaction/transaction_bloc.dart';
 import 'package:fincontrol/bloc/transaction/transaction_state.dart';
+import 'package:fincontrol/bloc/transaction/transaction_event.dart';
 import 'package:fincontrol/data/models/transaction_model.dart';
+import 'package:fincontrol/view/navigationbar/add_transaction_sheet.dart';
 import '../widgets/glass_container.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:fincontrol/view/notifications/notifications_page.dart';
@@ -423,9 +425,30 @@ class _ActivityPageState extends State<ActivityPage> {
         final record = transactions[index];
         final isIncome = record.type == 'Income';
         
-        return GlassContainer(
-          padding: const EdgeInsets.all(16),
-          borderRadius: BorderRadius.circular(20),
+        return Dismissible(
+          key: Key(record.id),
+          direction: DismissDirection.endToStart,
+          background: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 20),
+            decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(20)),
+            child: const Icon(Icons.delete, color: Colors.white),
+          ),
+          onDismissed: (direction) {
+            context.read<TransactionBloc>().add(DeleteTransaction(record.id));
+          },
+          child: GestureDetector(
+            onTap: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (context) => AddTransactionSheet(existingTransaction: record),
+              );
+            },
+            child: GlassContainer(
+              padding: const EdgeInsets.all(16),
+              borderRadius: BorderRadius.circular(20),
           child: Row(
             children: [
               Container(
@@ -477,7 +500,7 @@ class _ActivityPageState extends State<ActivityPage> {
               ),
             ],
           ),
-        );
+        )));
       },
     );
   }

@@ -7,7 +7,6 @@ import 'package:fincontrol/bloc/transaction/transaction_bloc.dart';
 import 'package:fincontrol/bloc/transaction/transaction_state.dart';
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../widgets/glass_container.dart';
 
 class HomePage extends StatelessWidget {
   final VoidCallback? onSeeAllActivity;
@@ -20,28 +19,36 @@ class HomePage extends StatelessWidget {
     final textColor = Theme.of(context).textTheme.bodyLarge?.color;
     final mutedTextColor = Theme.of(context).textTheme.bodySmall?.color;
     final primaryColor = Theme.of(context).colorScheme.primary;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
+    // Using a solid, opaque slate-grey color inspired by the example screenshot.
+    // This creates strong contrast against the background without using any transparency.
+    final cardColor = isDarkMode 
+        ? const Color(0xFF272732) // Solid dark slate/purple-grey (like the 'Smart TV' card)
+        : Colors.white;
 
-    return Stack(
-      children: [
-        ListView(
-          padding: const EdgeInsets.only(top: 64, left: 16, right: 16, bottom: 120),
+    return Scaffold(
+      backgroundColor: Colors.transparent, // Ensures the global animated background gradient shows through
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.only(top: 24, left: 16, right: 16, bottom: 120),
           children: [
-            _buildHeader(context, textColor, primaryColor),
+            _buildHeader(context, textColor, primaryColor, cardColor),
             const SizedBox(height: 24),
-            _buildBalanceCard(context, textColor, mutedTextColor, primaryColor),
-            const SizedBox(height: 20),
-            _buildQuickActions(context, textColor, mutedTextColor, primaryColor),
-            const SizedBox(height: 20),
-            _buildAiInsightCard(context, textColor, primaryColor),
+            _buildBalanceCard(context, textColor, mutedTextColor, primaryColor, cardColor),
             const SizedBox(height: 24),
-            _buildRecentTransactions(context, textColor, mutedTextColor, primaryColor),
+            _buildQuickActions(context, textColor, mutedTextColor, primaryColor, cardColor),
+            const SizedBox(height: 24),
+            _buildAiInsightCard(context, textColor, primaryColor, cardColor),
+            const SizedBox(height: 32),
+            _buildRecentTransactions(context, textColor, mutedTextColor, primaryColor, cardColor),
           ],
         ),
-      ],
+      ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, Color? textColor, Color primaryColor) {
+  Widget _buildHeader(BuildContext context, Color? textColor, Color primaryColor, Color cardColor) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -49,8 +56,8 @@ class HomePage extends StatelessWidget {
           child: Row(
             children: [
               CircleAvatar(
-                backgroundColor: primaryColor.withValues(alpha: 0.2),
-                radius: 28,
+                backgroundColor: primaryColor.withValues(alpha: 0.1),
+                radius: 24,
                 child: Icon(Icons.person, color: primaryColor),
               ),
               const SizedBox(width: 12),
@@ -58,7 +65,7 @@ class HomePage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Good Morning,', style: TextStyle(fontSize: 14, color: textColor?.withValues(alpha: 0.7))),
+                    Text('Good Morning,', style: TextStyle(fontSize: 13, color: textColor?.withValues(alpha: 0.6))),
                     Text('The One Who Wait', style: TextStyle(fontSize: 20, color: textColor, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis, maxLines: 1),
                   ],
                 ),
@@ -68,36 +75,40 @@ class HomePage extends StatelessWidget {
         ),
         Row(
           children: [
-            GlassContainer(
-              padding: const EdgeInsets.all(8),
-              borderRadius: BorderRadius.circular(30),
-              child: IconButton(
-                icon: Icon(Icons.search, color: textColor),
-                iconSize: 24,
-                onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const InvestPage()));
-                },
-              ),
-            ),
-            const SizedBox(width: 8),
-            GlassContainer(
-              padding: const EdgeInsets.all(8),
-              borderRadius: BorderRadius.circular(30),
-              child: IconButton(
-                icon: Icon(Icons.notifications_outlined, color: textColor),
-                iconSize: 24,
-                onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationsPage()));
-                },
-              ),
-            ),
+            _buildIconButton(context, Icons.search, textColor, cardColor, () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const InvestPage()));
+            }),
+            const SizedBox(width: 12),
+            _buildIconButton(context, Icons.notifications_none, textColor, cardColor, () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationsPage()));
+            }),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildBalanceCard(BuildContext context, Color? textColor, Color? mutedTextColor, Color primaryColor) {
+  Widget _buildIconButton(BuildContext context, IconData icon, Color? iconColor, Color bgColor, VoidCallback onTap) {
+    return Container(
+      decoration: BoxDecoration(
+        color: bgColor,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: IconButton(
+        icon: Icon(icon, color: iconColor, size: 22),
+        onPressed: onTap,
+      ),
+    );
+  }
+
+  Widget _buildBalanceCard(BuildContext context, Color? textColor, Color? mutedTextColor, Color primaryColor, Color cardColor) {
     return BlocBuilder<TransactionBloc, TransactionState>(
       builder: (context, state) {
         double currentMonthIncome = 0;
@@ -121,22 +132,32 @@ class HomePage extends StatelessWidget {
             ? (currentMonthExpense / currentMonthIncome).clamp(0.0, 1.0) 
             : 0.0;
 
-        return GlassContainer(
+        return Container(
           width: double.infinity,
           padding: const EdgeInsets.all(24),
-          borderRadius: BorderRadius.circular(24),
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Available Balance', style: TextStyle(fontSize: 14, color: mutedTextColor, fontWeight: FontWeight.w600)),
+              Text('Total Balance', style: TextStyle(fontSize: 14, color: mutedTextColor, fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('\$${totalBalance.toStringAsFixed(2)}', style: TextStyle(fontSize: 32, color: textColor, fontWeight: FontWeight.w900)),
+                  Text('\$${totalBalance.toStringAsFixed(2)}', style: TextStyle(fontSize: 36, color: textColor, fontWeight: FontWeight.w900, letterSpacing: -1)),
                   SizedBox(
-                    width: 70,
-                    height: 40,
+                    width: 60,
+                    height: 35,
                     child: LineChart(
                       LineChartData(
                         gridData: const FlGridData(show: false),
@@ -153,13 +174,10 @@ class HomePage extends StatelessWidget {
                             ],
                             isCurved: true,
                             color: primaryColor,
-                            barWidth: 2.5,
+                            barWidth: 3,
                             isStrokeCapRound: true,
                             dotData: const FlDotData(show: false),
-                            belowBarData: BarAreaData(
-                              show: true,
-                              color: primaryColor.withValues(alpha: 0.15),
-                            ),
+                            belowBarData: BarAreaData(show: false),
                           ),
                         ],
                       ),
@@ -168,30 +186,53 @@ class HomePage extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 24),
-              Divider(height: 1, thickness: 0.5, color: mutedTextColor?.withValues(alpha: 0.2)),
-              const SizedBox(height: 16),
-              Text('This Month\'s Cash Flow', style: TextStyle(fontSize: 14, color: textColor, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 12),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Income', style: TextStyle(fontSize: 12, color: mutedTextColor)),
-                      Text('\$${currentMonthIncome.toStringAsFixed(2)}', style: const TextStyle(fontSize: 15, color: Colors.green, fontWeight: FontWeight.bold)),
-                    ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), shape: BoxShape.circle),
+                              child: const Icon(Icons.arrow_downward, color: Colors.green, size: 12),
+                            ),
+                            const SizedBox(width: 8),
+                            Text('Income', style: TextStyle(fontSize: 12, color: mutedTextColor, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text('\$${currentMonthIncome.toStringAsFixed(2)}', style: TextStyle(fontSize: 16, color: textColor, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text('Expense', style: TextStyle(fontSize: 12, color: mutedTextColor)),
-                      Text('\$${currentMonthExpense.toStringAsFixed(2)}', style: const TextStyle(fontSize: 15, color: Colors.red, fontWeight: FontWeight.bold)),
-                    ],
+                  Container(width: 1, height: 40, color: mutedTextColor?.withValues(alpha: 0.2)),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.1), shape: BoxShape.circle),
+                              child: const Icon(Icons.arrow_upward, color: Colors.red, size: 12),
+                            ),
+                            const SizedBox(width: 8),
+                            Text('Expenses', style: TextStyle(fontSize: 12, color: mutedTextColor, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text('\$${currentMonthExpense.toStringAsFixed(2)}', style: TextStyle(fontSize: 16, color: textColor, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
@@ -208,31 +249,26 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildAiInsightCard(BuildContext context, Color? textColor, Color primaryColor) {
+  Widget _buildAiInsightCard(BuildContext context, Color? textColor, Color primaryColor, Color cardColor) {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-          colors: [
-            primaryColor.withValues(alpha: 0.15),
-            primaryColor.withValues(alpha: 0.05),
-          ],
-        ),
-        border: Border.all(color: primaryColor.withValues(alpha: 0.3), width: 1),
+        color: primaryColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: primaryColor.withValues(alpha: 0.2), width: 1),
       ),
       padding: const EdgeInsets.all(16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.auto_awesome, color: primaryColor, size: 24),
+          Icon(Icons.lightbulb_outline, color: primaryColor, size: 24),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('AI Insight', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: textColor)),
+                Text('Insight', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: textColor)),
                 const SizedBox(height: 4),
-                Text('You spent 15% less on Food this week compared to last week. Great job staying on budget!', 
+                Text('You spent 15% less on Food this week compared to last week. Great job staying on budget.', 
                   style: TextStyle(fontSize: 13, color: textColor?.withValues(alpha: 0.8), height: 1.4),
                 ),
               ],
@@ -243,62 +279,82 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickActions(BuildContext context, Color? textColor, Color? mutedTextColor, Color primaryColor) {
+  Widget _buildQuickActions(BuildContext context, Color? textColor, Color? mutedTextColor, Color primaryColor, Color cardColor) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _buildActionBtn(context, Icons.trending_up, 'Invest', primaryColor, textColor, () {
+        _buildActionBtn(context, Icons.trending_up, 'Invest', primaryColor, textColor, cardColor, () {
           Navigator.push(context, MaterialPageRoute(builder: (context) => const InvestPage()));
         }),
-        _buildActionBtn(context, Icons.track_changes, 'New Goal', primaryColor, textColor, () {
+        _buildActionBtn(context, Icons.flag_outlined, 'New Goal', primaryColor, textColor, cardColor, () {
           Navigator.push(context, MaterialPageRoute(builder: (context) => const CreatePortfolioPage()));
         }),
-        _buildActionBtn(context, Icons.account_balance_wallet, 'Wealth', primaryColor, textColor, () {
+        _buildActionBtn(context, Icons.account_balance_wallet_outlined, 'Wealth', primaryColor, textColor, cardColor, () {
           onGoToWealth?.call();
         }),
-        _buildActionBtn(context, Icons.history, 'Activity', primaryColor, textColor, () {
+        _buildActionBtn(context, Icons.receipt_long_outlined, 'Activity', primaryColor, textColor, cardColor, () {
           onSeeAllActivity?.call();
         }),
       ],
     );
   }
 
-  Widget _buildActionBtn(BuildContext context, IconData icon, String label, Color primaryColor, Color? textColor, VoidCallback onTap) {
+  Widget _buildActionBtn(BuildContext context, IconData icon, String label, Color primaryColor, Color? textColor, Color cardColor, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
         children: [
-          GlassContainer(
-            borderRadius: BorderRadius.circular(16),
+          Container(
             padding: const EdgeInsets.all(16),
-            child: Icon(icon, color: primaryColor, size: 28),
+            decoration: BoxDecoration(
+              color: cardColor,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(icon, color: textColor, size: 24),
           ),
-          const SizedBox(height: 8),
-          Text(label, style: TextStyle(fontSize: 12, color: textColor, fontWeight: FontWeight.w500)),
+          const SizedBox(height: 12),
+          Text(label, style: TextStyle(fontSize: 12, color: textColor, fontWeight: FontWeight.w600)),
         ],
       ),
     );
   }
 
-  Widget _buildRecentTransactions(BuildContext context, Color? textColor, Color? mutedTextColor, Color primaryColor) {
-    return GlassContainer(
-      padding: const EdgeInsets.all(20),
-      borderRadius: BorderRadius.circular(24),
+  Widget _buildRecentTransactions(BuildContext context, Color? textColor, Color? mutedTextColor, Color primaryColor, Color cardColor) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Recent Transactions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: textColor)),
+              Text('Recent', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
               TextButton(
                 onPressed: onSeeAllActivity,
                 style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                child: Text('See all', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: primaryColor)),
+                child: Text('See all', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: primaryColor)),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           BlocBuilder<TransactionBloc, TransactionState>(
             builder: (context, state) {
               if (state is TransactionLoading) return const Center(child: CircularProgressIndicator());
@@ -312,9 +368,9 @@ class HomePage extends StatelessWidget {
                       padding: const EdgeInsets.all(24.0),
                       child: Column(
                         children: [
-                          Icon(Icons.receipt_long, color: mutedTextColor?.withValues(alpha: 0.5), size: 48),
+                          Icon(Icons.receipt_long, color: mutedTextColor?.withValues(alpha: 0.3), size: 48),
                           const SizedBox(height: 16),
-                          Text('No recent transactions', style: TextStyle(color: mutedTextColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                          Text('No transactions yet', style: TextStyle(color: mutedTextColor, fontSize: 14)),
                         ],
                       ),
                     ),
@@ -325,25 +381,25 @@ class HomePage extends StatelessWidget {
                   children: recent.map((t) {
                     bool isIncome = t.type == 'Income';
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 16.0),
+                      padding: const EdgeInsets.only(bottom: 20.0),
                       child: Row(
                         children: [
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: (isIncome ? Colors.green : Colors.orange).withValues(alpha: 0.1),
+                              color: isIncome ? Colors.green.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(_getCategoryIcon(t.category), color: isIncome ? Colors.green : Colors.orange, size: 24),
+                            child: Icon(_getCategoryIcon(t.category), color: isIncome ? Colors.green : (textColor ?? Colors.black), size: 20),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(t.note.isNotEmpty ? t.note : t.category, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
+                                Text(t.note.isNotEmpty ? t.note : t.category, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: textColor)),
                                 const SizedBox(height: 4),
-                                Text(DateFormat('MMM dd, hh:mm a').format(t.date), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: mutedTextColor)),
+                                Text(DateFormat('MMM dd').format(t.date), style: TextStyle(fontSize: 13, color: mutedTextColor)),
                               ],
                             ),
                           ),
@@ -365,12 +421,12 @@ class HomePage extends StatelessWidget {
 
   IconData _getCategoryIcon(String category) {
     switch (category) {
-      case 'Food': return Icons.fastfood;
-      case 'Transport': return Icons.directions_car;
-      case 'Shopping': return Icons.shopping_cart;
-      case 'Entertainment': return Icons.movie;
-      case 'Work': return Icons.work;
-      case 'Salary': return Icons.attach_money;
+      case 'Food': return Icons.restaurant;
+      case 'Transport': return Icons.directions_car_outlined;
+      case 'Shopping': return Icons.shopping_bag_outlined;
+      case 'Entertainment': return Icons.movie_creation_outlined;
+      case 'Work': return Icons.work_outline;
+      case 'Salary': return Icons.payments_outlined;
       default: return Icons.category_outlined;
     }
   }

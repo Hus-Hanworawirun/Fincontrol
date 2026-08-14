@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 
 class GlassContainer extends StatelessWidget {
@@ -26,9 +25,11 @@ class GlassContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final glassColor = isDarkMode 
-        ? const Color(0x66192134) // Dark Glass Card
-        : const Color(0x99FFFFFF); // Light Glass Card
+    
+    // Using solid slate-grey for Dark Mode to match premium solid UI (Anti-AI-Slop)
+    final solidColor = isDarkMode 
+        ? const Color(0xFF272732) // Solid dark slate/purple-grey
+        : Colors.white; 
     
     final br = borderRadius ?? BorderRadius.circular(16);
 
@@ -36,26 +37,21 @@ class GlassContainer extends StatelessWidget {
       width: width,
       height: height,
       margin: margin,
+      padding: padding ?? const EdgeInsets.all(16),
       decoration: BoxDecoration(
+        color: color ?? solidColor,
         borderRadius: br,
-        border: border ?? Border.all(
-          color: Colors.white.withValues(alpha:0.08),
-          width: 1.5,
-        ),
-      ),
-      child: ClipRRect(
-        borderRadius: br,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-          child: Container(
-            padding: padding ?? const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: color ?? glassColor,
+        border: border,
+        boxShadow: [
+          if (!isDarkMode)
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-            child: child,
-          ),
-        ),
+        ],
       ),
+      child: child,
     );
   }
 }

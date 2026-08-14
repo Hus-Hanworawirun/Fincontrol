@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../bloc/transaction/transaction_bloc.dart';
+import '../../bloc/transaction/transaction_event.dart';
+import '../../data/models/transaction_model.dart';
 import '../../core/app_categories.dart';
 import '../../core/gemini_service.dart';
 import '../widgets/glass_container.dart';
@@ -7,7 +12,8 @@ import '../widgets/glass_container.dart';
 enum TransactionType { income, expense }
 
 class AddTransactionSheet extends StatefulWidget {
-  const AddTransactionSheet({super.key});
+  final TransactionModel? existingTransaction;
+  const AddTransactionSheet({super.key, this.existingTransaction});
 
   @override
   State<AddTransactionSheet> createState() => _AddTransactionSheetState();
@@ -23,6 +29,19 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
 
   List<String> _suggestions = [];
   bool _loadingSuggestions  = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.existingTransaction != null) {
+      final t = widget.existingTransaction!;
+      _type = t.type == 'Income' ? TransactionType.income : TransactionType.expense;
+      _noteController.text = t.note;
+      _amountController.text = t.amount.toString();
+      _selectedDate = t.date;
+      _selectedCategory = t.category;
+    }
+  }
 
   @override
   void dispose() {
@@ -75,7 +94,29 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
   }
 
   void _submit() {
-    // TODO: save to Firestore via TransactionModel
+    final note = _noteController.text.trim();
+    final amountText = _amountController.text.trim();
+    if (note.isEmpty || amountText.isEmpty || _selectedCategory == null) return;
+    
+    final amount = double.tryParse(amountText) ?? 0.0;
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    
+    final t = TransactionModel(
+      id: widget.existingTransaction?.id ?? '',
+      userId: userId,
+      amount: amount,
+      category: _selectedCategory!,
+      date: _selectedDate,
+      note: note,
+      type: _type == TransactionType.income ? 'Income' : 'Expense',
+    );
+    
+    if (widget.existingTransaction == null) {
+      context.read<TransactionBloc>().add(AddTransaction(t));
+    } else {
+      context.read<TransactionBloc>().add(UpdateTransaction(t));
+    }
+    
     Navigator.pop(context);
   }
 
@@ -122,7 +163,7 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Add Transaction',
+                Text(widget.existingTransaction == null ? 'Add Transaction' : 'Edit Transaction',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor)),
                 IconButton(
                   icon: Icon(Icons.close, color: mutedTextColor),

@@ -1,0 +1,155 @@
+import 'package:fincontrol/view/navigationbar/add_transaction_sheet.dart';
+import 'package:fincontrol/view/wealth/add_entry_sheet.dart';
+import 'package:fincontrol/view/wealth/create_new_portfolio.dart';
+import 'package:fincontrol/view/wealth/invest_page.dart';
+import 'package:flutter/material.dart';
+
+class CreateActionMenu extends StatelessWidget {
+  const CreateActionMenu({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
+    // Solid background matching the premium UI
+    final backgroundColor = isDarkMode ? const Color(0xFF272732) : Colors.white;
+    final textColor = Theme.of(context).textTheme.bodyLarge?.color;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      padding: const EdgeInsets.only(top: 16, bottom: 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Drag handle
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'What would you like to add?',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: textColor,
+            ),
+          ),
+          const SizedBox(height: 32),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 24, // Horizontal spacing between icons
+              runSpacing: 24, // Vertical spacing between rows
+              children: [
+                _buildGridItem(
+                  context,
+                  icon: Icons.receipt_long,
+                  title: 'Transaction',
+                  color: Colors.green,
+                  textColor: textColor,
+                  onTap: () {
+                    Navigator.pop(context);
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => const AddTransactionSheet(),
+                    );
+                  },
+                ),
+                _buildGridItem(
+                  context,
+                  icon: Icons.account_balance_wallet,
+                  title: 'Asset',
+                  color: Colors.blue,
+                  textColor: textColor,
+                  onTap: () {
+                    Navigator.pop(context);
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => const AddEntrySheet(),
+                    );
+                  },
+                ),
+                _buildGridItem(
+                  context,
+                  icon: Icons.flag,
+                  title: 'Goal',
+                  color: Colors.orange,
+                  textColor: textColor,
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const CreatePortfolioPage()));
+                  },
+                ),
+                _buildGridItem(
+                  context,
+                  icon: Icons.trending_up,
+                  title: 'Invest',
+                  color: primaryColor,
+                  textColor: textColor,
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const InvestPage()));
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGridItem(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required Color color,
+    required Color? textColor,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        width: 80, // Fixed width to ensure grid alignment
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 32),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: textColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

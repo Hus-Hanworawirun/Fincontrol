@@ -12,6 +12,8 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
       : super(TransactionInitial()) {
     on<LoadTransactions>(_onLoadTransactions);
     on<AddTransaction>(_onAddTransaction);
+    on<UpdateTransaction>(_onUpdateTransaction);
+    on<DeleteTransaction>(_onDeleteTransaction);
     on<TransactionsUpdated>((event, emit) => emit(TransactionLoaded(event.transactions)));
     on<TransactionFailed>((event, emit) => emit(TransactionError(event.error)));
   }
@@ -36,6 +38,22 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
   void _onAddTransaction(AddTransaction event, Emitter<TransactionState> emit) async {
     try {
       await _transactionRepository.addTransaction(event.transaction);
+    } catch (e) {
+      if (!isClosed) emit(TransactionError(e.toString()));
+    }
+  }
+
+  void _onUpdateTransaction(UpdateTransaction event, Emitter<TransactionState> emit) async {
+    try {
+      await _transactionRepository.updateTransaction(event.transaction);
+    } catch (e) {
+      if (!isClosed) emit(TransactionError(e.toString()));
+    }
+  }
+
+  void _onDeleteTransaction(DeleteTransaction event, Emitter<TransactionState> emit) async {
+    try {
+      await _transactionRepository.deleteTransaction(event.id);
     } catch (e) {
       if (!isClosed) emit(TransactionError(e.toString()));
     }
