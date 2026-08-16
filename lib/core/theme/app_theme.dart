@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'app_colors.dart';
+import 'package:fincontrol/core/theme/app_colors.dart';
 
 class AppTheme {
   static ThemeData get darkTheme {
@@ -15,10 +15,10 @@ class AppTheme {
         error: AppColors.destructive,
         surface: AppColors.darkBackground,
       ),
-      textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme).copyWith(
-        bodyLarge: GoogleFonts.inter(color: AppColors.darkText),
-        bodyMedium: GoogleFonts.inter(color: AppColors.darkText),
-        bodySmall: GoogleFonts.inter(color: AppColors.darkMutedText),
+      textTheme: GoogleFonts.promptTextTheme(ThemeData.dark().textTheme).copyWith(
+        bodyLarge: GoogleFonts.prompt(color: AppColors.darkText),
+        bodyMedium: GoogleFonts.prompt(color: AppColors.darkText),
+        bodySmall: GoogleFonts.prompt(color: AppColors.darkMutedText),
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
@@ -45,10 +45,10 @@ class AppTheme {
         error: AppColors.destructive,
         surface: AppColors.lightBackground,
       ),
-      textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme).copyWith(
-        bodyLarge: GoogleFonts.inter(color: AppColors.lightText),
-        bodyMedium: GoogleFonts.inter(color: AppColors.lightText),
-        bodySmall: GoogleFonts.inter(color: AppColors.lightMutedText),
+      textTheme: GoogleFonts.promptTextTheme(ThemeData.light().textTheme).copyWith(
+        bodyLarge: GoogleFonts.prompt(color: AppColors.lightText),
+        bodyMedium: GoogleFonts.prompt(color: AppColors.lightText),
+        bodySmall: GoogleFonts.prompt(color: AppColors.lightMutedText),
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
@@ -63,3 +63,4 @@ class AppTheme {
     );
   }
 }
+
