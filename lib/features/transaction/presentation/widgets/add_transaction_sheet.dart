@@ -215,21 +215,42 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
               style: TextStyle(color: textColor),
               decoration: _inputDeco('e.g. Lunch, Salary...', primaryColor, fieldBg, mutedTextColor),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
 
             // AI Suggest button
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: _loadingSuggestions ? null : _onSuggest,
-                icon: _loadingSuggestions
-                    ? const SizedBox(width: 14, height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.auto_awesome, size: 16),
-                label: const Text('Suggest category'),
-                style: TextButton.styleFrom(foregroundColor: primaryColor),
+            GestureDetector(
+              onTap: _loadingSuggestions ? null : _onSuggest,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                decoration: BoxDecoration(
+                  gradient: _loadingSuggestions
+                      ? null
+                      : const LinearGradient(
+                          colors: [Color(0xFF7C3AED), Color(0xFFDB2777)],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                  color: _loadingSuggestions ? Colors.white12 : null,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _loadingSuggestions
+                        ? const SizedBox(width: 16, height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.auto_awesome, size: 18, color: Colors.white),
+                    const SizedBox(width: 8),
+                    Text(
+                      _loadingSuggestions ? 'Suggesting...' : 'Suggest category with AI',
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
+                    ),
+                  ],
+                ),
               ),
             ),
+            const SizedBox(height: 8),
 
             // Suggestion chips
             if (_suggestions.isNotEmpty) ...[
@@ -359,10 +380,11 @@ class _AddTransactionSheetState extends State<AddTransactionSheet> {
     );
   }
 
-  InputDecoration _inputDeco(String hint, Color primaryColor, Color fieldBg, Color? mutedTextColor, {Widget? prefix}) => InputDecoration(
+  InputDecoration _inputDeco(String hint, Color primaryColor, Color fieldBg, Color? mutedTextColor, {Widget? prefix, Widget? suffix}) => InputDecoration(
     hintText: hint,
     hintStyle: TextStyle(color: mutedTextColor),
     prefix: prefix,
+    suffix: suffix,
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
     enabledBorder: OutlineInputBorder(
